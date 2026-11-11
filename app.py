@@ -405,12 +405,31 @@ def browse(sid):
     try:
         if mode == "search" and q:
             return jsonify(src.search(q, page))
+        if mode == "genre" and request.args.get("g"):
+            return jsonify(src.by_genre(request.args["g"], page))
         return jsonify(src.latest(page) if mode == "latest" else src.popular(page))
     except Exception as e:
         return err(e, 502)
 
 
 _details_cache = {}
+_genre_cache = {}
+
+
+@app.get("/api/genres/<sid>")
+def genres(sid):
+    src = need_source(sid)
+    hit = _genre_cache.get(sid)
+    if hit and time.time() - hit[0] < 6 * 3600 and not request.args.get("refresh"):
+        return jsonify({"genres": hit[1]})
+    try:
+        g = src.genres()
+    except NotImplementedError:
+        g = []
+    except Exception as e:
+        return jsonify({"genres": [], "error": str(e)[:200]})
+    _genre_cache[sid] = (time.time(), g)
+    return jsonify({"genres": g})
 
 
 @app.get("/api/manga")
@@ -1183,7 +1202,7 @@ def _open_ui(url):
     webbrowser.open(url)
 
 
-VERSION = "3.1"
+VERSION = "3.2"
 
 
 def _auto_update(force=False):

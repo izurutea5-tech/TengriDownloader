@@ -115,6 +115,10 @@ input[type=checkbox]{accent-color:var(--pink)}
 .empty img.hero{width:min(420px,90%);margin:0 auto 22px;display:block}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
 .chip{border:1px solid var(--line2);background:var(--panel);border-radius:14px;padding:2px 10px;font-size:12px;color:var(--mute)}
+a.chip,button.chip{cursor:pointer;font:inherit;font-size:12px}a.chip:hover,button.chip:hover{border-color:var(--pink);color:var(--txt)}
+.chip.on{background:var(--pink);border-color:var(--pink);color:#04141a;font-weight:600}
+.gpanel{max-height:210px;overflow:auto;margin:0 0 12px;padding:10px;border:1px solid var(--line2);border-radius:12px;background:var(--panel)}
+.gpanel .chips{margin:6px 0 0}.gpanel input{width:100%}
 .tag{font-size:11px;font-weight:600;padding:1px 8px;border-radius:6px;background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
 .bar{height:5px;background:var(--card2);border-radius:4px;overflow:hidden;margin-top:6px}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--deep),var(--pink));transition:width .3s;box-shadow:0 0 10px var(--glow)}
@@ -678,19 +682,39 @@ async function browseSource(sid) {
   const s = sites.find(x => x.id === sid);
   if (s) api('/ui/used', {method: 'POST', body: {id: sid}});
   if (!s) throw new Error('Эх сурвалж олдсонгүй');
-  const p = qs(); let mode = p.mode || 'popular', q = p.q || '', page = 1, loading = false, more = true;
+  const p = qs(); let mode = p.mode || 'popular', q = p.q || '', g = p.g || '', gname = p.gn || '', page = 1, loading = false, more = true, GEN = null;
   head(s.name, '', true);
-  V.innerHTML = `<div class="tabs"><a data-m="popular">Алдартай</a><a data-m="latest">Шинэ</a></div>
+  V.innerHTML = `<div class="tabs"><a data-m="popular">Алдартай</a><a data-m="latest">Шинэ</a><a data-m="genre" id="gtab" style="display:none">Төрөл ▾</a></div>
+    <div class="gpanel" id="gp" style="display:none"><input type="text" id="gq" placeholder="Төрөл хайх… (Action, Romance…)"><div class="chips" id="gl"></div></div>
     <div class="row"><input type="text" id="sq" style="flex:1" placeholder="${esc(s.name)} дотроос хайх…" value="${esc(q)}"><button class="btn fill" id="sbtn">Хайх</button></div>
+    <div id="gcur" class="muted" style="margin:-4px 0 10px"></div>
     <div class="grid" id="sg"></div><div id="sm" style="text-align:center;margin:20px"></div>`;
-  const tabs = () => V.querySelectorAll('.tabs a').forEach(a => a.classList.toggle('on', a.dataset.m === mode));
-  V.querySelectorAll('.tabs a').forEach(a => a.onclick = () => { mode = a.dataset.m; q = ''; $('#sq').value = ''; reset(); });
+  const tabs = () => {
+    V.querySelectorAll('.tabs a').forEach(a => a.classList.toggle('on', a.dataset.m === mode));
+    $('#gcur').innerHTML = mode === 'genre' && gname ? `Төрөл: <span class="chip on">${esc(gname)}</span> <a class="chip" id="gclr">✕ арилгах</a>` : '';
+    if ($('#gclr')) $('#gclr').onclick = () => { mode = 'popular'; g = gname = ''; drawG(); reset(); };
+  };
+  const drawG = () => {
+    if (!GEN) return; const f = ($('#gq').value || '').trim().toLowerCase();
+    $('#gl').innerHTML = GEN.filter(x => !f || x.name.toLowerCase().includes(f)).map(x => `<button class="chip${mode === 'genre' && x.id === g ? ' on' : ''}" data-g="${esc(x.id)}">${esc(x.name)}</button>`).join('') || '<span class="muted">Олдсонгүй</span>';
+    $('#gl').querySelectorAll('[data-g]').forEach(b => b.onclick = () => { mode = 'genre'; g = b.dataset.g; gname = b.textContent; q = ''; $('#sq').value = ''; $('#gp').style.display = 'none'; drawG(); reset(); });
+  };
+  $('#gq').oninput = drawG;
+  api(`/genres/${encodeURIComponent(sid)}`).then(r => {
+    if (my !== gen || !r.genres || !r.genres.length) return;
+    GEN = r.genres; $('#gtab').style.display = ''; $('#gtab').textContent = `Төрөл (${GEN.length}) ▾`;
+    if (mode === 'genre' && g && !gname) { const x = GEN.find(x => x.id === g); gname = x ? x.name : g; tabs(); }
+    drawG();
+  }).catch(() => {});
+  V.querySelectorAll('.tabs a').forEach(a => a.onclick = () => {
+    if (a.dataset.m === 'genre') { const o = $('#gp').style.display === 'none'; $('#gp').style.display = o ? '' : 'none'; if (o) $('#gq').focus(); return; }
+    $('#gp').style.display = 'none'; mode = a.dataset.m; q = ''; g = gname = ''; $('#sq').value = ''; drawG(); reset(); });
   $('#sbtn').onclick = () => { q = $('#sq').value.trim(); mode = q ? 'search' : 'popular'; reset(); };
   $('#sq').onkeydown = e => e.key === 'Enter' && $('#sbtn').click();
   async function load() {
     if (loading || !more) return; loading = true; $('#sm').innerHTML = '<div class="spin" style="margin:10px auto"></div>';
     try {
-      const r = await api(`/browse/${encodeURIComponent(sid)}?mode=${mode}&q=${encodeURIComponent(q)}&page=${page}`);
+      const r = await api(`/browse/${encodeURIComponent(sid)}?mode=${mode}&q=${encodeURIComponent(q)}&g=${encodeURIComponent(g)}&page=${page}`);
       $('#sg').insertAdjacentHTML('beforeend', r.items.map(m => tile(m, sid)).join(''));
       more = r.has_next && r.items.length > 0; page++;
       $('#sm').innerHTML = more ? '<button class="btn" id="moreBtn">Цааш үзэх</button>' : (page === 2 && !r.items.length ? '<div class="muted">Юу ч олдсонгүй</div>' : '');
@@ -702,6 +726,17 @@ async function browseSource(sid) {
   V.onscroll = () => { if (location.hash.startsWith('#/browse/') && V.scrollTop + V.clientHeight > V.scrollHeight - 400) load(); };
   reset();
 }
+
+// Дэлгэрэнгүй хуудсан дээрх төрөл дээр дарахад тухайн эх сурвалжаас тэр төрлийн мангаг харуулна
+window.IZgenre = async (sid, name) => {
+  name = (name || '').trim();
+  try {
+    const r = await api(`/genres/${enc(sid)}`);
+    const x = (r.genres || []).find(x => x.name.toLowerCase() === name.toLowerCase());
+    if (x) { location.hash = `#/browse/${enc(sid)}?mode=genre&g=${enc(x.id)}&gn=${enc(x.name)}`; return; }
+  } catch (e) {}
+  location.hash = `#/browse/${enc(sid)}?mode=search&q=${enc(name)}`;
+};
 
 // ---------------- manga detail ----------------
 R.manga = async () => {
@@ -721,7 +756,7 @@ R.manga = async () => {
     <div class="detail"><div class="bgc" style="background-image:url('${img(m.cover, source)}')"></div><img src="${img(m.cover, source)}">
       <div style="flex:1;min-width:0"><h2>${esc(m.title)}</h2>
         <div class="muted">${esc(m.source_name)}${m.author ? ' · ' + esc(m.author) : ''}${m.status ? ' · ' + esc(m.status) : ''} · ${chs.length} бүлэг · <span id="unr"></span></div>
-        <div class="chips">${m.genres.slice(0, 14).map(g => `<span class="chip">${esc(g)}</span>`).join('')}</div>
+        <div class="chips">${m.genres.slice(0, 14).map(g => `<a class="chip" title="Энэ төрлийн бусад манга" data-gsrc="${esc(source)}" onclick="IZgenre(this.dataset.gsrc, this.textContent)">${esc(g)}</a>`).join('')}</div>
         <div class="desc" onclick="this.classList.toggle('open')">${esc(m.description)}</div>
         <div class="row" style="margin-top:14px">${readBtn()}
           <button class="btn ${m.in_library ? '' : 'fill'}" id="libBtn"></button>

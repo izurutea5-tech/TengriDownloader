@@ -4,7 +4,7 @@ import json
 import re
 
 from .. import http
-from .base import Source, img_src, chapter_number, text, dedupe
+from .base import Source, img_src, chapter_number, text, dedupe, genre_links
 
 TS_RE = re.compile(r"ts_reader\.run\((\{.*?\})\);", re.S)
 
@@ -38,6 +38,32 @@ class MangaThemesia(Source):
     def search(self, query, page):
         url = f"{self.base}/" + (f"page/{page}/" if page > 1 else "")
         s, _ = self.soup(url, params={"s": query})
+        return self._list(s)
+
+    def genres(self):
+        s, _ = self.soup(f"{self.base}/{self.mpath}/")
+        out = []
+        for inp in s.select("ul.genrez input[value], .genrez input[value], input[name='genre[]']"):
+            lab = s.select_one(f"label[for='{inp.get('id')}']") if inp.get("id") else None
+            name = text(lab) or inp.get("value")
+            if inp.get("value") and name:
+                out.append({"id": "f:" + inp["value"], "name": name})
+        if out:
+            seen = set()
+            return sorted([g for g in out if not (g["id"] in seen or seen.add(g["id"]))], key=lambda g: g["name"].lower())
+        g = genre_links(s, self.base, r"/genres?/([^/?#]+)/?$")
+        if not g:
+            s, _ = self.soup(self.base + "/")
+            g = genre_links(s, self.base, r"/genres?/([^/?#]+)/?$")
+        return [{"id": "p:" + x["id"], "name": x["name"]} for x in g]
+
+    def by_genre(self, genre_id, page):
+        kind, slug = genre_id.split(":", 1) if ":" in genre_id else ("f", genre_id)
+        if kind == "f":
+            s, _ = self.soup(f"{self.base}/{self.mpath}/",
+                             params=[("genre[]", slug), ("order", "popular"), ("page", page)])
+        else:
+            s, _ = self.soup(f"{self.base}/genres/{slug}/" + (f"page/{page}/" if page > 1 else ""))
         return self._list(s)
 
     def details(self, manga_id):

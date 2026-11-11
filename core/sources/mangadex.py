@@ -49,6 +49,15 @@ class MangaDex(Source):
     def search(self, query, page):
         return self._query(page, [("title", query), ("order[relevance]", "desc")])
 
+    def genres(self):
+        d = http.get(API + "/manga/tag").json()
+        return sorted([{"id": t["id"], "name": t["attributes"]["name"].get("en") or "?"}
+                       for t in d["data"] if t["attributes"].get("group") in ("genre", "theme")],
+                      key=lambda g: g["name"].lower())
+
+    def by_genre(self, genre_id, page):
+        return self._query(page, [("includedTags[]", genre_id), ("order[followedCount]", "desc")])
+
     def details(self, manga_id):
         m = http.get(f"{API}/manga/{manga_id}", params=[("includes[]", "cover_art"), ("includes[]", "author")]).json()["data"]
         a = m["attributes"]

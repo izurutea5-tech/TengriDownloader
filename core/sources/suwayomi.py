@@ -20,6 +20,11 @@ M_MANGA = """mutation($id: Int!) { fetchManga(input: {id: $id}) { manga {
 M_CHAPTERS = """mutation($id: Int!) { fetchChapters(input: {mangaId: $id}) { chapters {
   id name chapterNumber uploadDate sourceOrder scanlator } } }"""
 M_PAGES = "mutation($id: Int!) { fetchChapterPages(input: {chapterId: $id}) { pages } }"
+_F = "__typename ... on CheckBoxFilter { name } ... on TriStateFilter { name } ... on SelectFilter { name values }"
+Q_FILTERS = "query($id: LongString!) { source(id: $id) { filters { %s ... on GroupFilter { name filters { %s } } } } }" % (_F, _F)
+M_BROWSE_F = """mutation($input: FetchSourceMangaInput!) { fetchSourceManga(input: $input) {
+  hasNextPage mangas { id title thumbnailUrl } } }"""
+GENRE_RE = re.compile(r"genre|tag|categor|жанр|төрөл|género|catégorie|gênero", re.I)
 M_LOGIN = "mutation($u: String!, $p: String!) { login(input: {username: $u, password: $p}) { accessToken } }"
 
 
@@ -145,6 +150,39 @@ class SuwayomiSource(Source):
 
     def search(self, query, page):
         return self._browse("SEARCH", page, query)
+
+    def genres(self):
+        """Өргөтгөлийн шүүлтүүрээс «Genre/Tags» бүлгийг олно. id: "g<бүлэг>.<мөр>.<c|t>" эсвэл "s<байрлал>.<утга>" """
+        fs = self.c.gql(Q_FILTERS, {"id": self.sw_id})["source"]["filters"]
+        out = []
+        for gi, f in enumerate(fs):
+            t, name = f.get("__typename"), f.get("name") or ""
+            if t == "GroupFilter" and GENRE_RE.search(name):
+                for ci, ch in enumerate(f.get("filters") or []):
+                    k = {"CheckBoxFilter": "c", "TriStateFilter": "t"}.get(ch.get("__typename"))
+                    if k and ch.get("name"):
+                        out.append({"id": f"g{gi}.{ci}.{k}", "name": ch["name"]})
+            elif t == "SelectFilter" and GENRE_RE.search(name):
+                for vi, v in enumerate(f.get("values") or []):
+                    if vi and v:  # 0 нь ихэвчлэн «Бүгд»
+                        out.append({"id": f"s{gi}.{vi}", "name": v})
+            if out:
+                break
+        return out
+
+    def by_genre(self, genre_id, page):
+        if genre_id.startswith("g"):
+            gi, ci, k = genre_id[1:].split(".")
+            inner = {"position": int(ci)}
+            inner.update({"checkBoxState": True} if k == "c" else {"triState": "INCLUDE"})
+            change = {"position": int(gi), "groupChange": inner}
+        else:
+            gi, vi = genre_id[1:].split(".")
+            change = {"position": int(gi), "selectState": int(vi)}
+        inp = {"source": self.sw_id, "type": "SEARCH", "page": page, "query": "", "filters": [change]}
+        d = self.c.gql(M_BROWSE_F, {"input": inp})["fetchSourceManga"]
+        return {"items": [{"id": str(m["id"]), "title": m["title"], "cover": self.c.abs(m["thumbnailUrl"])}
+                          for m in d["mangas"]], "has_next": d["hasNextPage"]}
 
     def details(self, manga_id):
         mid = int(manga_id)

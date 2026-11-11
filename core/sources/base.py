@@ -30,6 +30,19 @@ def text(el):
     return el.get_text(" ", strip=True) if el else ""
 
 
+def genre_links(s, base, pattern):
+    """Хуудсан дээрх төрлийн холбоосуудыг цуглуулна: pattern-ийн 1-р бүлэг = slug."""
+    out, seen = [], set()
+    for a in s.select("a[href]"):
+        m = re.search(pattern, a["href"])
+        name = text(a)
+        name = re.sub(r"\s*\(?\d[\d,.]*\)?\s*$", "", name).strip()  # "Action (123)" -> "Action"
+        if m and name and m.group(1) not in seen and len(name) < 40:
+            seen.add(m.group(1))
+            out.append({"id": m.group(1), "name": name})
+    return sorted(out, key=lambda g: g["name"].lower())
+
+
 def dedupe(items, key="id"):
     seen, out = set(), []
     for it in items:
@@ -69,6 +82,13 @@ class Source:
         return self.popular(page)
 
     def search(self, query, page):
+        raise NotImplementedError
+
+    def genres(self):
+        """-> [{"id","name"}] — төрлөөр шүүх боломжгүй бол []"""
+        return []
+
+    def by_genre(self, genre_id, page):
         raise NotImplementedError
 
     def details(self, manga_id):

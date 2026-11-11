@@ -4,7 +4,7 @@ import re
 from bs4 import BeautifulSoup
 
 from .. import http
-from .base import Source, img_src, chapter_number, text, dedupe
+from .base import Source, img_src, chapter_number, text, dedupe, genre_links
 
 
 class Madara(Source):
@@ -38,6 +38,19 @@ class Madara(Source):
     def search(self, query, page):
         url = f"{self.base}/" + (f"page/{page}/" if page > 1 else "")
         s, _ = self.soup(url, params={"s": query, "post_type": "wp-manga"})
+        return self._list(s)
+
+    def genres(self):
+        s, _ = self.soup(f"{self.base}/{self.mpath}/")
+        g = genre_links(s, self.base, r"/manga-genre/([^/?#]+)/?")
+        if not g:
+            s, _ = self.soup(self.base + "/")
+            g = genre_links(s, self.base, r"/manga-genre/([^/?#]+)/?")
+        return g
+
+    def by_genre(self, genre_id, page):
+        url = f"{self.base}/manga-genre/{genre_id}/" + (f"page/{page}/" if page > 1 else "")
+        s, _ = self.soup(url, params={"m_orderby": "views"})
         return self._list(s)
 
     def _info(self, s, label):
