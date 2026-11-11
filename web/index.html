@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#06141a">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/web/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Tengri">
+<title>Tengri Downloader</title>
+<link rel="icon" type="image/png" href="/web/favicon.png">
+<meta name="color-scheme" content="dark">
+<style>
+/* ============ Tengri Downloader — design system ============ */
+:root{
+  --bg:#050f13; --bg2:#071820; --panel:#0a1d25; --card:#0d2530; --card2:#123241; --line:#17394a; --line2:#215066;
+  --text:#e7f7fb; --mute:#89aab6; --dim:#5d7f8b;
+  --pink:#3fe3ff; --pink2:#9af1ff;              /* гол өнгө (лого: цэнхэр-ногоон) */
+  --deep:#0e7a90; --yellow:#ffc93a; --ok:#3ddc97; --err:#ff5d73; --warn:#ffc93a;
+  --on-accent:#04222b;
+  --tint:color-mix(in srgb,var(--pink) 16%,transparent); --tint2:color-mix(in srgb,var(--pink) 8%,transparent);
+  --glow:color-mix(in srgb,var(--pink) 35%,transparent);
+  --r:12px; --r-sm:8px;
+  --display:"Bahnschrift SemiCondensed","Bahnschrift","Avenir Next Condensed","Roboto Condensed","Ubuntu Condensed","DejaVu Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --ui:"Segoe UI Variable Text","Segoe UI",-apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,Roboto,Ubuntu,"Noto Sans",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px;border:2px solid var(--bg)}::-webkit-scrollbar-thumb:hover{background:var(--deep)}
+::selection{background:var(--deep);color:#fff}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:14px/1.5 var(--ui);-webkit-font-smoothing:antialiased}
+body{background:radial-gradient(1200px 600px at 85% -10%,color-mix(in srgb,var(--deep) 22%,transparent),transparent 60%),radial-gradient(900px 500px at -10% 110%,color-mix(in srgb,var(--deep) 14%,transparent),transparent 60%),var(--bg)}
+a{color:inherit;text-decoration:none}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--pink);outline-offset:2px}
+.app{display:flex;height:100vh}
+
+/* ---- sidebar ---- */
+nav{width:240px;flex:none;background:linear-gradient(180deg,#081c24,#06141a);border-right:1px solid var(--line);padding:16px 12px 12px;display:flex;flex-direction:column;gap:2px}
+nav .brand{display:flex;align-items:center;gap:10px;padding:4px 6px 22px}
+nav .brand img.mk{width:42px;height:42px;flex:none;filter:drop-shadow(0 0 10px var(--glow))}
+nav .brand .wt{display:flex;flex-direction:column;min-width:0;line-height:1}
+nav .brand .wt img{width:158px;height:auto;display:block}
+nav .brand .wt small{font:600 9.5px/1 var(--display);letter-spacing:2.4px;white-space:nowrap;color:var(--mute);margin-top:6px;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+nav .brand .wt small:before{content:"";width:14px;height:2px;background:var(--yellow);border-radius:2px}
+nav .grp{font:600 10.5px/1 var(--display);letter-spacing:2px;text-transform:uppercase;color:var(--dim);padding:14px 12px 6px}
+nav a{position:relative;display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:10px;color:#c6dde4;font-weight:500;transition:background .15s,color .15s}
+nav a:hover{background:var(--tint2);color:var(--text)}
+nav a.on{background:linear-gradient(90deg,var(--tint),transparent);color:var(--pink2)}
+nav a.on:before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--pink);box-shadow:0 0 12px var(--pink)}
+nav svg{width:20px;height:20px;fill:currentColor;flex:none}
+.badge{margin-left:auto;background:var(--yellow);color:#2a1d00;border-radius:10px;font-size:11px;font-weight:700;padding:1px 7px;line-height:16px}
+#engDot{margin-top:auto;font-size:12px;color:var(--mute);border-top:1px solid var(--line);border-radius:0;padding:12px 10px 4px}
+#engDot:before{display:none}
+
+/* ---- topbar ---- */
+main{flex:1;display:flex;flex-direction:column;min-width:0}
+header{height:64px;flex:none;display:flex;align-items:center;gap:10px;padding:0 24px;background:color-mix(in srgb,var(--bg2) 75%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+header h1{font:600 22px/1 var(--display);letter-spacing:.4px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hsearch{position:relative;width:min(340px,32vw)}
+.hsearch input{width:100%;padding:8px 12px 8px 34px!important;border-radius:20px!important;background:var(--card)!important}
+.hsearch svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;fill:var(--mute)}
+.hsearch kbd{position:absolute;right:10px;top:50%;transform:translateY(-50%);font:11px var(--ui);color:var(--dim);border:1px solid var(--line);border-radius:5px;padding:0 5px}
+#view{flex:1;overflow:auto;padding:22px 26px 70px}
+
+/* ---- controls ---- */
+.btn{display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line2);color:var(--text);padding:8px 14px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;transition:.15s;line-height:1.2}
+.btn:hover{border-color:var(--pink);background:var(--card2);color:var(--pink2)}
+.btn.fill{background:linear-gradient(135deg,var(--pink2),var(--pink) 45%,var(--deep));color:var(--on-accent);border-color:transparent;box-shadow:0 4px 18px var(--glow)}
+.btn.fill:hover{filter:brightness(1.08);color:var(--on-accent)}
+.btn.ghost{background:transparent;border-color:var(--line)}
+.btn.warn{border-color:color-mix(in srgb,var(--yellow) 50%,transparent);color:var(--yellow)}
+.btn:disabled{opacity:.4;cursor:default;filter:none;box-shadow:none}
+.btn.big{padding:11px 20px;font-size:14px;border-radius:12px}
+.icon{background:none;border:0;cursor:pointer;padding:7px;border-radius:10px;color:var(--mute);display:inline-flex;transition:.15s}
+.icon:hover{background:var(--tint);color:var(--pink2)}
+.icon svg{width:21px;height:21px;fill:currentColor}
+.icon.sm{padding:5px;opacity:.75}.icon.sm:hover{opacity:1}.icon.sm svg{width:18px;height:18px}
+input[type=text],input[type=number],input[type=password],select{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;outline:none;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus{border-color:var(--pink);box-shadow:0 0 0 3px var(--tint)}
+select{cursor:pointer}
+input[type=checkbox]{accent-color:var(--pink)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.muted{color:var(--mute)}
+.err{color:var(--err)}
+.section{font:600 19px/1.2 var(--display);letter-spacing:.4px;margin:22px 0 12px;display:flex;align-items:center;gap:10px}
+.section:before{content:"";width:4px;height:16px;border-radius:2px;background:var(--pink);box-shadow:0 0 10px var(--glow)}
+.section input,.section select{font:14px var(--ui)}
+
+/* ---- cards / lists ---- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:16px;margin-top:16px}
+.tile{position:relative;aspect-ratio:2/3;border-radius:var(--r);overflow:hidden;background:var(--card);cursor:pointer;border:1px solid var(--line);transition:transform .18s,box-shadow .18s,border-color .18s}
+.tile:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--pink) 60%,transparent);box-shadow:0 10px 28px #000a,0 0 0 1px var(--tint),0 0 22px var(--tint)}
+.tile img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s}
+.tile:hover img{transform:scale(1.05)}
+.tile .t{position:absolute;inset:auto 0 0 0;padding:36px 10px 10px;background:linear-gradient(transparent,#020a0dee 60%);font-size:13.5px;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.tile .b{position:absolute;top:8px;left:8px;background:var(--yellow);color:#2a1d00;font-size:11px;font-weight:700;border-radius:6px;padding:1px 7px}
+.tile .u{position:absolute;top:8px;right:8px;background:#031015cc;color:var(--pink2);font-size:11px;font-weight:700;border-radius:6px;padding:1px 7px;backdrop-filter:blur(6px);border:1px solid var(--line)}
+.tile .u.ok{color:var(--ok)}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:11px 14px;transition:background .15s,border-color .15s}
+.item:hover{background:var(--card);border-color:var(--line2)}
+.item .grow{flex:1;min-width:0}
+.item .name{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .sub{font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.thumb{width:46px;height:46px;border-radius:10px;object-fit:cover;background:var(--card2);flex:none}
+.tabs{display:flex;gap:6px;margin:0 0 18px;padding:4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;width:max-content;max-width:100%}
+.tabs a{text-align:center;padding:7px 18px;color:var(--mute);border-radius:9px;font-size:13px;font-weight:600}
+.tabs a:hover{color:var(--text)}
+.tabs a.on{background:var(--tint);color:var(--pink2);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--pink) 35%,transparent)}
+.empty{text-align:center;color:var(--mute);padding:80px 20px;font-size:15px;max-width:520px;margin:0 auto}
+.empty b{display:block;font-size:40px;margin-bottom:12px;color:var(--pink2);text-shadow:0 0 24px var(--glow)}
+.empty img.hero{width:min(420px,90%);margin:0 auto 22px;display:block}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.chip{border:1px solid var(--line2);background:var(--panel);border-radius:14px;padding:2px 10px;font-size:12px;color:var(--mute)}
+.tag{font-size:11px;font-weight:600;padding:1px 8px;border-radius:6px;background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.bar{height:5px;background:var(--card2);border-radius:4px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--deep),var(--pink));transition:width .3s;box-shadow:0 0 10px var(--glow)}
+.st{font-size:11px;font-weight:700;letter-spacing:.3px;padding:3px 9px;border-radius:7px;background:var(--card2);color:var(--mute)}
+.st.done,.st.skipped{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+.st.error{background:color-mix(in srgb,var(--err) 14%,transparent);color:var(--err)}
+.st.downloading{background:var(--tint);color:var(--pink2)}
+.spin{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--pink);border-radius:50%;animation:s .8s linear infinite;margin:80px auto}
+@keyframes s{to{transform:rotate(360deg)}}
+
+/* ---- manga page ---- */
+.detail{position:relative;display:flex;gap:26px;align-items:flex-start;margin:-22px -26px 20px;padding:26px;overflow:hidden;border-bottom:1px solid var(--line)}
+.detail .bgc{position:absolute;inset:0;background-size:cover;background-position:center 25%;filter:blur(38px) saturate(1.2);opacity:.28;transform:scale(1.2);z-index:0}
+.detail:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent,var(--bg) 96%);z-index:0}
+.detail>*{position:relative;z-index:1}
+.detail>img{width:210px;border-radius:var(--r);flex:none;background:var(--card);box-shadow:0 14px 40px #000c;border:1px solid var(--line2)}
+.detail h2{margin:4px 0 8px;font:700 32px/1.1 var(--display);letter-spacing:.3px}
+.desc{color:#bcd5dd;white-space:pre-line;max-height:7.5em;overflow:hidden;cursor:pointer;max-width:900px;-webkit-mask-image:linear-gradient(#000 70%,transparent)}
+.desc.open{max-height:none;-webkit-mask-image:none}
+.sticky{position:sticky;top:-22px;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);z-index:2;padding:10px 0;margin-top:6px;border-bottom:1px solid var(--line)}
+.ch{display:flex;align-items:center;gap:12px;padding:9px 12px;border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent);border-radius:8px}
+.ch:hover{background:var(--panel)}
+.ch input{width:16px;height:16px}
+.cname{flex:1}
+.ch .cname{cursor:pointer;padding:2px 0;font-weight:500}.ch .cname:hover{color:var(--pink2)}
+.ch.isread .cname{color:var(--dim);font-weight:400}
+.updbar{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,var(--card2),var(--panel));border:1px solid var(--line2);border-radius:14px;padding:12px 16px;box-shadow:0 14px 44px #000c,0 0 24px var(--tint);max-width:min(560px,94vw);animation:fi .25s}
+.updbar b{color:var(--pink2)}.updbar .x{margin-left:4px}
+.upd-notes{white-space:pre-wrap;max-height:260px;overflow:auto;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:13px;color:#cfe6ee;margin:8px 0}
+.updprog{height:8px;background:var(--card2);border-radius:5px;overflow:hidden;margin:14px 0 4px}.updprog i{display:block;height:100%;background:linear-gradient(90deg,var(--deep),var(--pink));width:0;transition:width .25s}
+.ch .cname.locked{color:var(--dim);cursor:not-allowed}.tag.lock{background:color-mix(in srgb,var(--yellow) 14%,transparent);color:var(--yellow)}
+.ch .cd{font-size:12px;min-width:90px;text-align:right}
+
+/* ---- library ---- */
+.tool{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+.cats{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.cats a{border:1px solid var(--line);background:var(--panel);border-radius:16px;padding:4px 13px;font-size:12.5px;color:var(--mute);cursor:pointer}
+.cats a:hover{color:var(--text)}.cats a.on{background:var(--pink);border-color:var(--pink);color:var(--on-accent);font-weight:600}
+.shelf{display:flex;gap:12px;overflow-x:auto;padding-bottom:10px}
+.cc{flex:none;width:260px;display:flex;gap:11px;background:linear-gradient(135deg,var(--card),var(--panel));border:1px solid var(--line);border-radius:var(--r);padding:9px;transition:.18s}
+.cc:hover{border-color:color-mix(in srgb,var(--pink) 55%,transparent);transform:translateY(-2px);box-shadow:0 8px 22px #0008}
+.cc img{width:56px;height:80px;object-fit:cover;border-radius:8px;background:var(--card2);flex:none}
+.ci{min-width:0;flex:1;display:flex;flex-direction:column;gap:2px;justify-content:center}
+.ct{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cs{font-size:11.5px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+details.loc{margin-bottom:8px}details.loc summary{cursor:pointer;padding:8px 0;list-style:none}details.loc summary::-webkit-details-marker{display:none}
+details.loc summary .section{display:inline-flex;margin:0}
+
+/* ---- search ---- */
+.sprog{display:flex;align-items:center;gap:12px;margin:14px 0 6px;color:var(--mute);font-size:13px}
+.sprog .bar{flex:1;margin:0;max-width:420px}
+.shit{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin-top:12px}
+.shit .hd{display:flex;align-items:center;gap:10px;font-weight:600}
+.shit .hd img{width:22px;height:22px;border-radius:6px}
+.shit .hd a.more{margin-left:auto;font-size:12.5px;color:var(--pink2);font-weight:600}
+.srow{display:flex;gap:12px;overflow-x:auto;padding:10px 0 4px}
+.srow .tile{flex:none;width:130px}
+
+/* ---- settings / modal ---- */
+.setting{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:14px 16px;border:1px solid var(--line);border-top:0;background:var(--panel)}
+.section+.setting,.muted+.setting,.setting:first-child{border-top:1px solid var(--line);border-radius:var(--r) var(--r) 0 0}
+.setting:has(+ .section),.setting:has(+ div:not(.setting)),.setting:last-child{border-radius:0 0 var(--r) var(--r)}
+.setting .muted{font-size:12px}
+.sw{display:flex;gap:8px}.sw a{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;box-shadow:inset 0 0 0 2px #0006}.sw a.on{border-color:#fff;box-shadow:0 0 12px currentColor}
+.modal{position:fixed;inset:0;background:#010608c0;backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:50;animation:fi .15s}
+.modal>div{background:var(--panel);border:1px solid var(--line2);border-radius:16px;padding:24px;width:min(540px,92vw);box-shadow:0 30px 80px #000c}
+.modal h3{margin:0 0 14px;font:600 20px var(--display);letter-spacing:.3px}
+.modal label{display:block;margin:12px 0 5px;color:var(--mute);font-size:12px}
+.modal input,.modal select{width:100%}
+@keyframes fi{from{opacity:0}}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid color-mix(in srgb,var(--pink) 50%,transparent);padding:10px 18px;border-radius:12px;display:none;z-index:99;box-shadow:0 12px 40px #000c,0 0 20px var(--tint);max-width:min(640px,92vw)}
+code{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:0 5px;font-size:12px}
+
+/* ---- reader ---- */
+body.reading nav,body.reading header{display:none}
+body.reading #view{padding:0;background:var(--rbg,#000)}
+.rd{--rw:900px;--rgap:0px;min-height:100vh;background:var(--rbg)}
+.rbar{position:fixed;left:0;right:0;z-index:20;display:flex;align-items:center;gap:10px;padding:8px 14px;background:#04121acc;backdrop-filter:blur(14px);transition:transform .2s,opacity .2s;opacity:0;pointer-events:none}
+.rtop{top:0;transform:translateY(-100%);border-bottom:1px solid var(--line)}.rbot{bottom:0;transform:translateY(100%);border-top:1px solid var(--line)}
+.rd.show .rbar{transform:none;opacity:1;pointer-events:auto}
+.rt{min-width:0;display:flex;flex-direction:column;line-height:1.25}.rt b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38vw}.rt span{font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38vw}
+#rch{max-width:230px}#rs{flex:1;accent-color:var(--pink)}#rn{font-variant-numeric:tabular-nums;min-width:70px;text-align:center}
+.rpanel{position:fixed;top:58px;right:14px;z-index:21;width:300px;background:var(--panel);border:1px solid var(--line2);border-radius:14px;padding:16px;box-shadow:0 14px 44px #000c}
+.rpanel .lab{display:flex;justify-content:space-between;color:var(--mute);font-size:12px;margin:10px 0 4px}.rpanel .lab:first-child{margin-top:0}
+.rpanel input[type=range],.rpanel select{width:100%;accent-color:var(--pink)}
+.rchk{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;cursor:pointer}
+#rbg a{width:30px;height:30px;border-radius:8px;border:2px solid var(--line);cursor:pointer}#rbg a.on{border-color:var(--pink)}
+.rpages.webtoon{display:flex;flex-direction:column;align-items:center;gap:var(--rgap)}
+.rpages.webtoon img{display:block;width:min(100%,var(--rw));min-height:70vh;background:#ffffff06}
+.rpages.webtoon img.ok{min-height:0;background:none}
+.rpages.paged{min-height:100vh;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.rpages.paged img{display:block;max-width:100%;max-height:100vh}
+.rpages.paged[data-fit=width]{align-items:flex-start}.rpages.paged[data-fit=width] img{width:min(100%,var(--rw));max-height:none}
+.rpages img.bad{min-height:160px;width:min(100%,var(--rw));display:flex;align-items:center;justify-content:center;color:var(--err);border:1px dashed var(--err);cursor:pointer;font-size:13px;padding:60px 20px;text-align:center}
+.rend{text-align:center;padding:70px 20px 140px;width:100%;color:#ddd;cursor:default}.rend h3{font:600 22px var(--display);margin:6px 0 20px}
+
+/* ---- narrow windows ---- */
+@media (max-width:980px){nav{width:76px;padding:14px 8px}nav .brand .wt,nav .grp,nav a span.lbl,#engDot{display:none}nav .brand{justify-content:center;padding-bottom:16px}nav a{justify-content:center}nav a .badge{position:absolute;top:2px;right:4px}.hsearch{width:200px}.detail>img{width:150px}}
+
+/* ---- phone (iPhone / Android) ---- */
+@media (max-width:760px){
+  html,body{height:100%;overflow:hidden}
+  input[type=text],input[type=number],input[type=password],select{font-size:16px}
+  .app{flex-direction:column-reverse;height:100dvh}
+  nav{width:100%;flex:none;flex-direction:row;padding:4px 2px calc(4px + env(safe-area-inset-bottom));border-right:0;border-top:1px solid var(--line);justify-content:space-around;gap:0;background:#06141af5;backdrop-filter:blur(14px)}
+  nav .brand,nav .grp,#engDot{display:none!important}
+  nav a{flex:1;min-width:0;flex-direction:column;gap:2px;padding:6px 2px 4px;font-size:10px;justify-content:center;border-radius:10px}
+  nav a span.lbl{display:block!important;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  nav a svg{width:23px;height:23px}
+  nav a.on{background:none}
+  nav a.on:before{left:28%;right:28%;top:-5px;bottom:auto;width:auto;height:3px;border-radius:0 0 3px 3px}
+  nav a .badge{position:absolute;top:1px;left:calc(50% + 4px);margin:0;font-size:10px;padding:0 5px;line-height:15px}
+  header{height:auto;min-height:54px;padding:calc(6px + env(safe-area-inset-top)) 10px 6px;gap:4px;flex-wrap:nowrap}
+  header h1{font-size:19px}
+  .hsearch{width:auto;flex:0 1 150px;min-width:0}.hsearch kbd{display:none}.hsearch input{padding-left:30px!important}
+  #actions{flex-wrap:nowrap}
+  #view{padding:14px 12px 28px}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px}
+  .tile .t{font-size:12px;padding:26px 7px 7px}
+  .detail{flex-direction:column;align-items:center;text-align:center;margin:-14px -12px 14px;padding:18px 14px;gap:14px}
+  .detail>img{width:150px}.detail h2{font-size:25px}.detail .row,.chips{justify-content:center}
+  .desc{margin:0 auto}
+  .sticky{top:-14px;gap:6px}.sticky input[type=number]{width:64px!important}
+  .ch{padding:9px 4px;gap:8px}.ch .cd{display:none}
+  .item{padding:10px 12px;gap:10px;flex-wrap:wrap}
+  .setting{flex-direction:column;align-items:stretch;gap:10px}
+  .setting input[type=text],.setting input[type=password]{width:100%!important}
+  .setting .row{flex-wrap:wrap}
+  .tabs{width:100%;overflow-x:auto}.tabs a{flex:1;padding:7px 10px}
+  .tool select{flex:1}
+  .shelf .cc{width:230px}
+  .srow .tile{width:108px}
+  .empty{padding:50px 10px}
+  .hide-m{display:none!important}
+  .rbar{gap:6px;padding:6px 8px}.rtop{padding-top:calc(6px + env(safe-area-inset-top))}.rbot{padding-bottom:calc(6px + env(safe-area-inset-bottom))}
+  .rt b,.rt span{max-width:34vw}#rch{max-width:30vw}#rmode{display:none}
+  .rbot .btn{padding:7px 9px;font-size:12px}
+  .rpanel{left:10px;right:10px;width:auto}
+  #toast{bottom:calc(76px + env(safe-area-inset-bottom))}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav>
+    <a class="brand" href="#/library" title="Tengri Downloader"><img class="mk" src="/web/mark.png" alt=""><div class="wt"><img src="/web/wordtext.png" alt="Tengri Downloader"><small>by tengritoon.site</small></div></a>
+    <div class="grp">Унших</div>
+    <a href="#/library" data-r="library" title="Номын сан"><svg viewBox="0 0 24 24"><path d="M4 6H2v14a2 2 0 0 0 2 2h14v-2H4V6zm16-4H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm0 14H8V4h12v12z"/></svg><span class="lbl">Номын сан</span></a>
+    <a href="#/updates" data-r="updates" title="Шинэчлэлт"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg><span class="lbl">Шинэчлэлт</span><span class="badge" id="updBadge" hidden></span></a>
+    <a href="#/history" data-r="history" title="Түүх"><svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6a7 7 0 1 1 2.05 4.95l-1.42 1.42A9 9 0 1 0 13 3zm-1 5v5l4.25 2.52.77-1.28-3.52-2.09V8H12z"/></svg><span class="lbl">Түүх</span></a>
+    <div class="grp">Олох</div>
+    <a href="#/browse" data-r="browse" title="Хайх"><svg viewBox="0 0 24 24"><path d="M12 10.9a1.1 1.1 0 1 0 0 2.2 1.1 1.1 0 0 0 0-2.2zM12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z"/></svg><span class="lbl">Хайх</span></a>
+    <div class="grp">Татах</div>
+    <a href="#/downloads" data-r="downloads" title="Татаж буй"><svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg><span class="lbl">Татаж буй</span><span class="badge" id="dlBadge" hidden></span></a>
+    <a href="#/local" data-r="local" title="Татагдсан"><svg viewBox="0 0 24 24"><path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2z"/></svg><span class="lbl">Татагдсан</span></a>
+    <div class="grp">Систем</div>
+    <a href="#/settings" data-r="settings" title="Тохиргоо"><svg viewBox="0 0 24 24"><path d="M19.14 12.94a7.07 7.07 0 0 0 0-1.88l2.03-1.58-1.92-3.32-2.39.96a7 7 0 0 0-1.63-.94L14.87 3h-3.84l-.36 2.18c-.59.24-1.13.56-1.63.94l-2.39-.96-1.92 3.32 2.03 1.58a7.07 7.07 0 0 0 0 1.88l-2.03 1.58 1.92 3.32 2.39-.96c.5.38 1.04.7 1.63.94l.36 2.18h3.84l.36-2.18c.59-.24 1.13-.56 1.63-.94l2.39.96 1.92-3.32-2.03-1.58zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg><span class="lbl">Тохиргоо</span></a>
+    <a href="#/settings" id="engDot"></a>
+  </nav>
+  <main>
+    <header><button class="icon" id="back" hidden onclick="history.back()"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg></button><h1 id="title"></h1><div class="row" id="actions"></div>
+      <label class="hsearch" title="Бүх эх сурвалжаас хайх (Ctrl+K)"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><input type="text" id="hq" placeholder="Манга хайх…" autocomplete="off"><kbd>Ctrl K</kbd></label></header>
+    <div id="view"></div>
+  </main>
+</div>
+<div id="toast"></div>
+<div id="updbar" class="updbar" hidden></div>
+<script>
+const $ = s => document.querySelector(s);
+const V = $('#view');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const api = async (path, opt = {}) => {
+  if (opt.body && typeof opt.body !== 'string') { opt.body = JSON.stringify(opt.body); opt.headers = {'Content-Type': 'application/json'}; }
+  const r = await fetch('/api' + path, opt);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+};
+const img = (url, sid) => url ? `/api/img?source=${encodeURIComponent(sid||'')}&url=${encodeURIComponent(url)}` : 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>';
+const toast = (m, ms = 2600) => { const t = $('#toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(t._t); t._t = setTimeout(() => t.style.display = 'none', ms); };
+const spin = () => V.innerHTML = '<div class="spin"></div>';
+const qs = () => Object.fromEntries(new URLSearchParams(location.hash.split('?')[1] || ''));
+let timer = null;
+function head(title, actions = '', back = false) { $('#title').textContent = title; $('#actions').innerHTML = actions; $('#back').hidden = !back; }
+const IC = {
+  back: '<svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>',
+  gear: '<svg viewBox="0 0 24 24"><path d="M19.14 12.94a7.07 7.07 0 0 0 0-1.88l2.03-1.58-1.92-3.32-2.39.96a7 7 0 0 0-1.63-.94L14.87 3h-3.84l-.36 2.18c-.59.24-1.13.56-1.63.94l-2.39-.96-1.92 3.32 2.03 1.58a7.07 7.07 0 0 0 0 1.88l-2.03 1.58 1.92 3.32 2.39-.96c.5.38 1.04.7 1.63.94l.36 2.18h3.84l.36-2.18c.59-.24 1.13-.56 1.63-.94l2.39.96 1.92-3.32-2.03-1.58zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>',
+  fs: '<svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>',
+  eye: '<svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>',
+  eyeOff: '<svg viewBox="0 0 24 24"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>',
+  refresh: '<svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>',
+  add: '<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>',
+  del: '<svg viewBox="0 0 24 24"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>',
+  dl: '<svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>',
+  play: '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',
+  pause: '<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>',
+  folder: '<svg viewBox="0 0 24 24"><path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2z"/></svg>',
+  edit: '<svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>',
+};
+
+// ---------------- router ----------------
+let gen = 0;
+async function route() {
+  clearInterval(timer); clearTimeout(timer); gen++; V.onscroll = null;
+  if (window._rdClean) { try { window._rdClean(); } catch (e) {} window._rdClean = null; }
+  document.body.classList.remove('reading');
+  if (!location.hash.startsWith('#/search') && document.activeElement !== $('#hq')) $('#hq').value = '';
+  const h = location.hash.slice(2) || 'library';
+  const [name] = h.split(/[/?]/);
+  document.querySelectorAll('nav a').forEach(a => a.classList.toggle('on', a.dataset.r === name || ((name === 'manga' || name === 'ext' || name === 'repo' || name === 'search') && a.dataset.r === 'browse') || (name === 'read' && a.dataset.r === 'local') || (name === 'reader' && a.dataset.r === 'library')));
+  V.scrollTop = 0;
+  const my = gen;
+  try { await (R[name] || R.library)(h); } catch (e) { if (my !== gen) return; V.innerHTML = `<div class="empty"><b>(;´Д\`)</b><span class="err">${esc(e.message)}</span></div>`; }
+}
+addEventListener('hashchange', route);
+$('#hq').addEventListener('keydown', e => { if (e.key === 'Enter') { const v = e.target.value.trim(); if (v) { location.hash = '#/search?q=' + encodeURIComponent(v); e.target.blur(); } } });
+addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K') && !document.body.classList.contains('reading')) { e.preventDefault(); $('#hq').focus(); $('#hq').select(); return; }
+  if (document.body.classList.contains('reading') || e.ctrlKey || e.altKey || e.metaKey) return;
+  const typing = ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName);
+  if (e.key === '/' && !typing) { const i = V.querySelector('input[type=text]') || $('#hq'); if (i) { e.preventDefault(); i.focus(); i.select(); } }
+  else if (e.key === 'Escape') { const m = document.querySelector('.modal'); if (m) m.remove(); else if (typing) e.target.blur(); else if (!$('#back').hidden) history.back(); }
+});
+const R = {};
+
+// ---------------- library ----------------
+const enc = encodeURIComponent;
+const mlink = (sid, mid) => `#/manga?source=${enc(sid)}&id=${enc(mid)}`;
+const rlink = (sid, mid, cid) => `#/reader?source=${enc(sid)}&manga=${enc(mid)}&chapter=${enc(cid)}`;
+const ago = t => { const s = Date.now() / 1000 - t; return s < 60 ? 'дөнгөж сая' : s < 3600 ? Math.floor(s / 60) + ' мин' : s < 86400 ? Math.floor(s / 3600) + ' цаг' : Math.floor(s / 86400) + ' өдөр'; };
+R.library = async () => {
+  head('Номын сан', `<button class="icon" title="Шинэ бүлэг шалгах" onclick="refreshLib()">${IC.refresh}</button>`);
+  const my = gen;
+  const [lib, hist] = await Promise.all([api('/library'), api('/history')]);
+  if (my !== gen) return;
+  if (!lib.length && !hist.length) { V.innerHTML = `<div class="empty"><img class="hero" src="/web/wordmark.png" alt="Tengri Downloader">Номын сан хоосон байна. Манга хайж олоод «Номын санд нэмэх» дарвал энд харагдана.<br><br><a class="btn fill big" href="#/browse">Манга хайх</a></div>`; return; }
+  const seen = new Set(), cont = hist.filter(h => !seen.has(h.key) && seen.add(h.key)).slice(0, 12);
+  const cats = [...new Set(lib.map(m => m.category).filter(Boolean))].sort();
+  let q = '', sort = pref('libSort', 'title'), filter = pref('libFilter', 'all'), cat = pref('libCat', '*');
+  if (cat !== '*' && cat !== '' && !cats.includes(cat)) cat = '*';
+  V.innerHTML = (cont.length ? `<div class="section" style="margin-top:0">Үргэлжлүүлэн унших</div><div class="shelf">${cont.map(h => `
+      <a class="cc" href="${rlink(h.source_id, h.manga_id, h.chapter_id)}" title="${esc(h.title)}"><img loading="lazy" src="${img(h.cover, h.source_id)}">
+        <div class="ci"><div class="ct">${esc(h.title)}</div><div class="cs">${esc(h.chapter_name)}</div>
+        <div class="bar"><i style="width:${h.read ? 100 : h.total ? Math.round((h.page + 1) / h.total * 100) : 0}%"></i></div><div class="cs">${h.read ? 'уншсан' : h.total ? `${h.page + 1}/${h.total}` : ''} · ${ago(h.t)}</div></div></a>`).join('')}</div>` : '')
+    + (lib.length ? `<div class="tool"><input type="text" id="lq" placeholder="Номын сангаас хайх…  ( / )" style="flex:1;min-width:180px">
+        <select id="lsort"><option value="title">Нэрээр</option><option value="unread">Уншаагүй нь эхэнд</option><option value="last">Сүүлд уншсан</option><option value="added">Сүүлд нэмсэн</option><option value="new">Шинэ бүлэгтэй</option></select>
+        <select id="lfilter"><option value="all">Бүгд</option><option value="unread">Уншаагүй бүлэгтэй</option><option value="started">Уншиж эхэлсэн</option><option value="done">Уншиж дууссан</option></select></div>
+      ${cats.length ? `<div class="cats" id="lcats">${[['*', 'Бүгд'], ...cats.map(c => [c, c]), ['', 'Ангилалгүй']].map(([k, n]) => `<a data-c="${esc(k)}">${esc(n)}</a>`).join('')}</div>` : ''}
+      <div id="refState" class="muted"></div><div class="grid" id="lg"></div>` : `<div class="empty" style="padding:50px 0">Номын сан хоосон. <a href="#/browse" style="color:var(--pink2)">Манга хайх</a></div>`);
+  if (!lib.length) return;
+  $('#lsort').value = sort; $('#lfilter').value = filter;
+  const draw = () => {
+    let l = lib.filter(m => (!q || m.title.toLowerCase().includes(q)) && (cat === '*' || (m.category || '') === cat)
+      && (filter === 'all' || (filter === 'unread' && m.unread > 0) || (filter === 'started' && m.last_read && m.unread > 0) || (filter === 'done' && m.total && !m.unread)));
+    const by = {title: (a, b) => a.title.localeCompare(b.title), unread: (a, b) => b.unread - a.unread, last: (a, b) => b.last_read - a.last_read, added: (a, b) => b.added - a.added, new: (a, b) => (b.new || 0) - (a.new || 0)}[sort];
+    l.sort((a, b) => by(a, b) || a.title.localeCompare(b.title));
+    $('#lg').innerHTML = l.map(m => `<a class="tile" href="${mlink(m.source_id, m.manga_id)}"><img loading="lazy" src="${img(m.cover, m.source_id)}">
+      ${m.new ? `<span class="b">+${m.new}</span>` : ''}${m.unread ? `<span class="u">${m.unread}</span>` : m.total ? '<span class="u ok">✓</span>' : ''}<div class="t">${esc(m.title)}</div></a>`).join('')
+      || '<div class="muted" style="grid-column:1/-1;padding:40px 0;text-align:center">Тохирох манга алга</div>';
+    document.querySelectorAll('#lcats a').forEach(a => a.classList.toggle('on', a.dataset.c === cat));
+  };
+  $('#lq').oninput = e => { q = e.target.value.trim().toLowerCase(); draw(); };
+  $('#lsort').onchange = e => { sort = e.target.value; setPref('libSort', sort); draw(); };
+  $('#lfilter').onchange = e => { filter = e.target.value; setPref('libFilter', filter); draw(); };
+  document.querySelectorAll('#lcats a').forEach(a => a.onclick = () => { cat = a.dataset.c; setPref('libCat', cat); draw(); });
+  draw(); pollRefresh();
+};
+async function refreshLib() { await api('/library/refresh', {method: 'POST'}); toast('Шинэ бүлгүүдийг шалгаж байна…'); pollRefresh(); }
+async function pollRefresh() {
+  const s = await api('/library/refresh'); const el = $('#refState');
+  if (el) el.innerHTML = s.running ? `Шалгаж байна: ${s.done}/${s.total}` : (s.errors.length ? `<span class="err">${s.errors.length} алдаа: ${esc(s.errors.slice(0,3).join(' · '))}</span>` : '');
+  if (s.running) { clearInterval(timer); timer = setTimeout(async () => { await pollRefresh(); if (!(await api('/library/refresh')).running && location.hash.includes('library')) R.library(); }, 1500); }
+}
+
+// ---------------- history ----------------
+R.history = async () => {
+  head('Түүх', `<button class="icon" title="Түүхийг цэвэрлэх" onclick="confirm('Уншсан түүхийг бүгдийг нь цэвэрлэх үү?') && api('/history',{method:'DELETE'}).then(route)">${IC.del}</button>`);
+  const my = gen, hist = await api('/history');
+  if (my !== gen) return;
+  if (!hist.length) { V.innerHTML = '<div class="empty"><b>(´･ω･`)</b>Одоогоор юу ч уншаагүй байна</div>'; return; }
+  let html = '', day = '';
+  for (const h of hist) {
+    const d = new Date(h.t * 1000).toLocaleDateString();
+    if (d !== day) { html += `<div class="section">${d}</div>`; day = d; }
+    html += `<div class="item"><a href="${mlink(h.source_id, h.manga_id)}"><img class="thumb" loading="lazy" src="${img(h.cover, h.source_id)}"></a>
+      <a class="grow" href="${rlink(h.source_id, h.manga_id, h.chapter_id)}"><div class="name">${esc(h.title)}</div>
+        <div class="sub">${esc(h.chapter_name)} — ${h.read ? 'уншсан' : h.total ? `${h.page + 1}/${h.total} хуудас` : ''} · ${new Date(h.t * 1000).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</div></a>
+      <a class="btn" href="${rlink(h.source_id, h.manga_id, h.chapter_id)}">${h.read ? 'Дахин унших' : 'Үргэлжлүүлэх'}</a>
+      <button class="icon" title="Түүхээс хасах" onclick="api('/history?key=${enc(h.key)}&chapter=${enc(h.chapter_id)}',{method:'DELETE'}).then(route)">${IC.del}</button></div>`;
+  }
+  V.innerHTML = `<div class="list">${html}</div>`;
+};
+
+// ---------------- updates ----------------
+R.updates = async () => {
+  head('Шинэчлэлт', `<button class="icon" title="Бүгдийг татах" onclick="dlUpdate(-1)">${IC.dl}</button><button class="icon" title="Шалгах" onclick="refreshLib().then(()=>setTimeout(route,4000))">${IC.refresh}</button><button class="icon" title="Цэвэрлэх" onclick="api('/updates',{method:'DELETE'}).then(route)">${IC.del}</button>`);
+  const my = gen, ups = await api('/updates');
+  if (my !== gen) return;
+  $('#updBadge').hidden = true;
+  if (!ups.length) { V.innerHTML = '<div class="empty"><b>(｡•́︿•̀｡)</b>Шинэ бүлэг алга. Номын сандаа манга нэмээд ↻ дар.</div>'; return; }
+  let html = '', day = '';
+  ups.forEach((u, i) => {
+    const d = new Date(u.time * 1000).toLocaleDateString();
+    if (d !== day) { html += `<div class="section">${d}</div>`; day = d; }
+    html += `<div class="item"><a href="${mlink(u.source_id, u.manga_id)}"><img class="thumb" loading="lazy" src="${img(u.cover, u.source_id)}"></a>
+      <a class="grow" href="${rlink(u.source_id, u.manga_id, u.chapter.id)}"><div class="name">${esc(u.title)}</div><div class="sub">${esc(u.chapter.name)}</div></a>
+      <a class="btn" href="${rlink(u.source_id, u.manga_id, u.chapter.id)}">Унших</a>
+      <button class="icon" title="Татах" onclick="dlUpdate(${i})">${IC.dl}</button></div>`;
+  });
+  V.innerHTML = `<div class="list">${html}</div>`;
+  window._ups = ups;
+};
+async function dlUpdate(i) {
+  const list = i < 0 ? [..._ups].reverse() : [_ups[i]];
+  for (const u of list) await api('/download', {method: 'POST', body: {source_id: u.source_id, manga: {id: u.manga_id, title: u.title, cover: u.cover}, chapters: [u.chapter]}});
+  toast(`${list.length} бүлэг дараалалд нэмлээ`); badges();
+}
+
+// ---------------- browse ----------------
+let SW = [], UI = {pinned: [], last_used: []};
+const pref = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
+const setPref = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+const PIN = '<svg viewBox="0 0 24 24"><path d="M16 9V4h1V2H7v2h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/></svg>';
+const LANG = {all: 'Бүх хэл', en: 'English', ko: '한국어', ja: '日本語', zh: '中文', mn: 'Монгол', ru: 'Русский', es: 'Español', fr: 'Français', id: 'Indonesia', vi: 'Tiếng Việt', th: 'ไทย', 'pt-BR': 'Português (BR)', ar: 'العربية', tr: 'Türkçe', de: 'Deutsch', it: 'Italiano', pl: 'Polski', localsourcelang: 'Local'};
+const langName = l => LANG[l] || l;
+const browseTabs = cur => `<div class="tabs">${[['browse', 'Эх сурвалж'], ['ext', 'Өргөтгөл'], ['repo', 'Repo']].map(([k, n]) => `<a href="#/${k}" class="${k === cur ? 'on' : ''}">${n}</a>`).join('')}</div>`;
+
+R.browse = async (h) => {
+  const sid = h.split(/[/?]/)[1];
+  if (sid) return browseSource(decodeURIComponent(sid));
+  head('Хайх', `<button class="btn" onclick="addSite()">+ Өөр сайт нэмэх</button>`);
+  const my = gen;
+  const [sites, ui] = await Promise.all([api('/sources'), api('/ui')]); UI = ui;
+  if (my !== gen) return;
+  V.innerHTML = browseTabs('browse') + `
+    <div class="row"><input type="text" id="gq" style="flex:1" placeholder="Бүх эх сурвалжаас нэг дор хайх…"><button class="btn fill" id="gqb">Бүгдээс хайх</button>
+      <select id="swLang"></select></div>
+    <div id="srcs"><div class="spin"></div></div>
+    <details style="margin-top:26px"><summary class="muted" style="cursor:pointer">Холбоосоор нээх (өргөтгөлгүй сайт)</summary>
+      <div class="row" style="margin-top:10px"><input type="text" id="openUrl" style="flex:1" placeholder="Манга хуудасны холбоос — https://..."><button class="btn" onclick="openUrl()">Нээх</button></div>
+      <div class="muted" style="font-size:12px;margin-top:4px">Madara / MangaThemesia загвартай сайтыг өргөтгөлгүйгээр таньж ажиллуулна.</div></details>`;
+  $('#openUrl').onkeydown = e => e.key === 'Enter' && openUrl();
+  const gs = () => { const v = $('#gq').value.trim(); if (v) location.hash = '#/search?q=' + enc(v); };
+  $('#gq').onkeydown = e => e.key === 'Enter' && gs(); $('#gqb').onclick = gs;
+  let err = '';
+  try { SW = await api('/suwayomi/sources'); } catch (e) { err = e.message; SW = []; }
+  if (my !== gen) return;
+  const own = sites.map(s => ({...s, own: true, icon: s.type === 'mangadex' ? 'https://mangadex.org/favicon.ico' : `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(new URL(s.base_url).host)}`, latest: true}));
+  window._ALL = [...SW, ...own];
+  const langs = [...new Set(SW.map(s => s.lang).concat(own.map(s => s.lang || 'en')))].sort();
+  const cur = pref('swLang', 'en');
+  $('#swLang').innerHTML = ['all', ...langs].map(l => `<option value="${esc(l)}" ${l === cur ? 'selected' : ''}>${esc(langName(l))}</option>`).join('');
+  $('#swLang').onchange = e => { setPref('swLang', e.target.value); drawSources(err); };
+  drawSources(err);
+};
+function srcRow(s) {
+  const pinned = UI.pinned.includes(s.id);
+  return `<div class="item"><img class="thumb" loading="lazy" src="${s.own ? esc(s.icon) : img(s.icon, s.id)}" onerror="this.style.visibility='hidden'">
+    <a class="grow" href="#/browse/${encodeURIComponent(s.id)}"><div class="name">${esc(s.name)}</div>
+      <div class="sub">${esc(langName(s.lang || 'en'))}${s.nsfw ? ' <span style="color:var(--pink2)">18+</span>' : ''}${s.own ? ` · ${esc(s.type)} · ${esc(s.base_url)}` : ''}</div></a>
+    ${s.latest ? `<a class="btn" href="#/browse/${encodeURIComponent(s.id)}?mode=latest">Шинэ</a>` : ''}
+    ${s.own ? `<button class="icon" title="Засах" onclick='editSite(${JSON.stringify(s).replace(/'/g, "&#39;")})'>${IC.edit}</button><button class="icon" title="Устгах" onclick="delSite('${esc(s.id)}')">${IC.del}</button>` : ''}
+    <button class="icon" title="${pinned ? 'Тогтоолтыг авах' : 'Тогтоох'}" style="${pinned ? 'color:var(--pink2)' : 'opacity:.5'}" onclick="togglePin('${esc(s.id)}')">${PIN}</button></div>`;
+}
+function visibleSources() { const l = $('#swLang') ? $('#swLang').value : pref('swLang', 'en'); return (window._ALL || []).filter(s => s.own || l === 'all' || (s.lang || 'en') === l || s.lang === 'all'); }
+function drawSources(err) {
+  const box = $('#srcs'); if (!box) return;
+  const all = window._ALL || [], vis = visibleSources(), byId = Object.fromEntries(all.map(s => [s.id, s]));
+  const sec = (t, list) => list.length ? `<div class="section">${t}</div><div class="list">${list.map(srcRow).join('')}</div>` : '';
+  const groups = {};
+  vis.filter(s => !s.own).forEach(s => (groups[s.lang] = groups[s.lang] || []).push(s));
+  box.innerHTML = (err ? `<div class="item" style="margin-top:14px"><div class="grow"><div class="err">${esc(err)}</div><div class="sub">Хөдөлгүүр асаагүй эсвэл тохируулаагүй байна.</div></div><a class="btn fill" href="#/settings">Хөдөлгүүр тохируулах</a></div>` : '')
+    + (!err && !SW.length ? `<div class="item" style="margin-top:14px"><div class="grow"><div class="name">Өргөтгөл суугаагүй байна</div><div class="sub">Эхлээд Repo нэмээд, Өргөтгөл хэсгээс хүссэн сайтуудаа суулгана.</div></div><a class="btn fill" href="#/repo">Repo нэмэх</a><a class="btn" href="#/ext">Өргөтгөл</a></div>` : '')
+    + sec('Сүүлд ашигласан', UI.last_used.map(id => byId[id]).filter(Boolean).slice(0, 1))
+    + sec('Тогтоосон', UI.pinned.map(id => byId[id]).filter(Boolean))
+    + Object.keys(groups).sort().map(l => sec(esc(langName(l)), groups[l])).join('')
+    + sec('Өөрийн нэмсэн сайтууд', vis.filter(s => s.own));
+}
+async function togglePin(id) { UI = await api('/ui/pin', {method: 'POST', body: {id}}); drawSources(); }
+
+// ---------------- extensions ----------------
+R.ext = async () => {
+  head('Хайх', `<button class="icon" title="Repo-оос шинэчлэх" onclick="loadExt(true)">${IC.refresh}</button>`);
+  V.innerHTML = browseTabs('ext') + `<div class="row"><input type="text" id="exq" style="flex:1" placeholder="Өргөтгөл хайх…"><select id="exLang"></select>
+    <label class="row muted" style="gap:6px"><input type="checkbox" id="exNsfw" ${pref('exNsfw', '1') === '1' ? 'checked' : ''}> 18+</label></div><div id="exl"><div class="spin"></div></div>`;
+  loadExt(false);
+};
+let EXT = [];
+async function loadExt(refresh) {
+  const box = $('#exl'); if (!box) return;
+  if (refresh) { box.innerHTML = '<div class="spin"></div><div class="muted" style="text-align:center">Repo-уудаас жагсаалт татаж байна…</div>'; }
+  try { EXT = await api('/ext' + (refresh ? '?refresh=1' : '')); }
+  catch (e) { box.innerHTML = `<div class="empty"><b>(;´Д\`)</b><span class="err">${esc(e.message)}</span><br><br><a class="btn" href="#/settings">Хөдөлгүүр</a></div>`; return; }
+  if (!$('#exLang')) return;
+  if (!EXT.length && !refresh) return loadExt(true);
+  const langs = [...new Set(EXT.map(e => e.lang))].sort(), cur = pref('exLang', 'en');
+  $('#exLang').innerHTML = ['all', ...langs].map(l => `<option value="${esc(l)}" ${l === cur ? 'selected' : ''}>${esc(langName(l))}</option>`).join('');
+  $('#exLang').onchange = e => { setPref('exLang', e.target.value); drawExt(); };
+  $('#exq').oninput = drawExt; $('#exNsfw').onchange = e => { setPref('exNsfw', e.target.checked ? '1' : '0'); drawExt(); };
+  drawExt();
+}
+function drawExt(limit = 150) {
+  const box = $('#exl'); if (!box) return;
+  const q = $('#exq').value.trim().toLowerCase(), l = $('#exLang').value, nsfw = $('#exNsfw').checked;
+  const f = EXT.filter(e => (!q || e.name.toLowerCase().includes(q) || e.pkgName.includes(q)) && (nsfw || !e.isNsfw) && (l === 'all' || e.lang === l || e.lang === 'all' || e.isInstalled));
+  if (!EXT.length) { box.innerHTML = `<div class="empty"><b>(・_・;)</b>Өргөтгөл алга. Эхлээд Repo нэмнэ үү.<br><br><a class="btn fill" href="#/repo">Repo нэмэх</a></div>`; return; }
+  const row = e => `<div class="item"><img class="thumb" loading="lazy" src="${img(e.icon)}" onerror="this.style.visibility='hidden'"><div class="grow">
+      <div class="name">${esc(e.name)}${e.isObsolete ? ' <span class="chip">хуучирсан</span>' : ''}</div>
+      <div class="sub">${esc(langName(e.lang))} · v${esc(e.versionName)}${e.isNsfw ? ' · <span style="color:var(--pink2)">18+</span>' : ''}</div></div>
+      ${e.hasUpdate ? `<button class="btn fill" onclick="extDo('${esc(e.pkgName)}','update',this)">Шинэчлэх</button>` : ''}
+      ${e.isInstalled ? `<button class="btn ghost" onclick="extDo('${esc(e.pkgName)}','uninstall',this)">Устгах</button>` : `<button class="btn" onclick="extDo('${esc(e.pkgName)}','install',this)">Суулгах</button>`}</div>`;
+  const up = f.filter(e => e.hasUpdate), inst = f.filter(e => e.isInstalled && !e.hasUpdate), avail = f.filter(e => !e.isInstalled);
+  const sec = (t, list) => list.length ? `<div class="section">${t} <span class="muted" style="font-size:13px">${list.length}</span></div><div class="list">${list.map(row).join('')}</div>` : '';
+  box.innerHTML = sec('Шинэчлэлт байна', up) + sec('Суусан', inst) + sec('Суулгах боломжтой', avail.slice(0, limit))
+    + (avail.length > limit ? `<div style="text-align:center;margin:16px"><button class="btn" onclick="drawExt(${limit + 300})">Цааш (${avail.length - limit})</button></div>` : '')
+    + (!f.length ? '<div class="empty">Олдсонгүй</div>' : '');
+}
+async function extDo(pkg, action, btn) {
+  btn.disabled = true; btn.textContent = {install: 'Суулгаж байна…', update: 'Шинэчилж байна…', uninstall: 'Устгаж байна…'}[action];
+  try { const e = await api('/ext/' + action, {method: 'POST', body: {pkg}}); const i = EXT.findIndex(x => x.pkgName === pkg); if (i >= 0 && e.pkgName) EXT[i] = e; toast({install: 'Суулгалаа', update: 'Шинэчиллээ', uninstall: 'Устгалаа'}[action]); }
+  catch (e) { toast('Алдаа: ' + e.message, 6000); }
+  drawExt();
+}
+
+// ---------------- repos ----------------
+const PRESETS = [
+  ['Keiyoushi', 'https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json', 'Хамгийн том repo — Asura, Akaza, Anisa, MangaDex… 1000+ сайт'],
+  ['Suwayomi', 'https://raw.githubusercontent.com/suwayomi/tachiyomi-extension/repo/index.min.json', 'Өөр Suwayomi сервертэй холбогдох өргөтгөл'],
+];
+R.repo = async () => {
+  head('Хайх');
+  V.innerHTML = browseTabs('repo') + '<div class="spin"></div>';
+  let list = [], e = '';
+  const my = gen;
+  try { list = await api('/stores'); } catch (x) { e = x.message; }
+  if (my !== gen) return;
+  const has = u => list.some(s => s.indexUrl.replace(/(index\.min|repo)\.json$/, '') === u.replace(/(index\.min|repo)\.json$/, ''));
+  V.innerHTML = browseTabs('repo') + (e ? `<div class="err" style="margin-bottom:12px">${esc(e)} — <a href="#/settings" style="text-decoration:underline">Хөдөлгүүр</a></div>` : '') + `
+    <div class="row"><input type="text" id="rpu" style="flex:1" placeholder="Repo-ны холбоос — https://raw.githubusercontent.com/.../index.min.json"><button class="btn fill" id="rpa">Нэмэх</button></div>
+    <div class="section">Нэмэгдсэн repo</div><div class="list">${list.map(s => `<div class="item"><div class="grow"><div class="name">${esc(s.name)} ${s.badgeLabel ? `<span class="chip">${esc(s.badgeLabel)}</span>` : ''}</div>
+      <div class="sub">${esc(s.indexUrl)}${s.extensions && s.extensions.totalCount != null ? ` · ${s.extensions.totalCount} өргөтгөл` : ''}</div></div>
+      <button class="icon" title="Хасах" onclick="delRepo('${esc(s.indexUrl)}')">${IC.del}</button></div>`).join('') || '<div class="muted">Repo нэмэгдээгүй байна.</div>'}</div>
+    <div class="section">Санал болгох</div><div class="list">${PRESETS.map(([n, u, d]) => `<div class="item"><div class="grow"><div class="name">${n}</div><div class="sub">${d}</div></div>
+      ${has(u) ? '<span class="tag">нэмэгдсэн</span>' : `<button class="btn fill" onclick="addRepo('${u}', this)">Нэмэх</button>`}</div>`).join('')}</div>`;
+  $('#rpa').onclick = () => addRepo($('#rpu').value.trim(), $('#rpa'));
+};
+async function addRepo(url, btn) {
+  if (!url) return; btn.disabled = true; btn.textContent = 'Нэмж байна…';
+  try { await api('/stores', {method: 'POST', body: {url}}); toast('Repo нэмэгдлээ. Өргөтгөл хэсгээс сайтуудаа суулгаарай.', 4000); route(); }
+  catch (e) { toast('Алдаа: ' + e.message, 6000); btn.disabled = false; btn.textContent = 'Нэмэх'; }
+}
+async function delRepo(url) { if (confirm('Энэ repo-г хасах уу? (Суусан өргөтгөлүүд хэвээр үлдэнэ)')) { await api('/stores?url=' + encodeURIComponent(url), {method: 'DELETE'}); route(); } }
+
+async function openUrl() {
+  const url = $('#openUrl').value.trim(); if (!url) return;
+  toast('Танин тодорхойлж байна…');
+  try { const r = await api('/open', {method: 'POST', body: {url}});
+    location.hash = r.manga_id ? `#/manga?source=${encodeURIComponent(r.source_id)}&id=${encodeURIComponent(r.manga_id)}` : `#/browse/${encodeURIComponent(r.source_id)}`;
+  } catch (e) { toast('Алдаа: ' + e.message, 5000); }
+}
+// ---------------- global search ----------------
+// Олон эх сурвалжаас нэг дор хайна: нэг зэрэг хязгаарлагдмал тоогоор (хөдөлгүүрийг гацаахгүй), олдсон нь шууд гарна.
+let SRCH = null;
+R.search = async () => {
+  const {q = '', scope = pref('srchScope', 'lang')} = qs();
+  head('Хайх', '', true);
+  const my = gen;
+  if (SRCH) SRCH.stop = true;
+  V.innerHTML = `<div class="row"><input type="text" id="sq2" value="${esc(q)}" placeholder="Мангагийн нэр…" style="flex:1;min-width:220px;font-size:15px;padding:11px 14px">
+      <select id="sscope"><option value="lang">Сонгосон хэлний бүх эх сурвалж</option><option value="pinned">Зөвхөн тогтоосон 📌</option><option value="own">Зөвхөн өөрийн сайтууд</option><option value="all">Бүх эх сурвалж (удаан)</option></select>
+      <button class="btn fill" id="sgo">Хайх</button></div>
+    <div class="sprog" id="sprog" hidden><span id="stxt"></span><div class="bar"><i id="sbar" style="width:0"></i></div><button class="btn ghost" id="sstop">Зогсоох</button></div>
+    <div id="shits"></div><details id="smiss" hidden style="margin-top:18px"><summary class="muted" style="cursor:pointer"></summary><div class="list" style="margin-top:8px"></div></details>`;
+  $('#sscope').value = scope;
+  const go = () => { const v = $('#sq2').value.trim(); if (!v) return; setPref('srchScope', $('#sscope').value); location.hash = `#/search?q=${enc(v)}&scope=${$('#sscope').value}`; if (v === q && $('#sscope').value === scope) route(); };
+  $('#sgo').onclick = go; $('#sq2').onkeydown = e => e.key === 'Enter' && go();
+  $('#sscope').onchange = go;
+  if (!q) { $('#sq2').focus(); V.insertAdjacentHTML('beforeend', '<div class="empty"><b>⌕</b>Мангагийн нэрээ бичээд Enter дар. Хайлт нь таны нэмсэн сайтууд болон суулгасан өргөтгөлүүдээс нэг дор хайна.</div>'); return; }
+  $('#hq').value = q;
+  // эх сурвалжуудаа цуглуулах
+  let sites = [], swErr = '';
+  const [own, ui] = await Promise.all([api('/sources'), api('/ui')]);
+  try { if (!SW.length) SW = await api('/suwayomi/sources'); } catch (e) { swErr = e.message; }
+  if (my !== gen) return;
+  const lang = pref('swLang', 'en');
+  const ownS = own.filter(s => s.type !== 'generic').map(s => ({...s, own: true}));
+  if (scope === 'own') sites = ownS;
+  else if (scope === 'pinned') sites = [...SW, ...ownS].filter(s => ui.pinned.includes(s.id));
+  else if (scope === 'all') sites = [...ownS, ...SW];
+  else sites = [...ownS, ...SW.filter(s => lang === 'all' || s.lang === lang || s.lang === 'all')];
+  // тогтоосон, сүүлд ашигласан нь эхэнд
+  const rank = s => (ui.pinned.includes(s.id) ? 0 : ui.last_used.includes(s.id) ? 1 : s.own ? 2 : 3);
+  sites.sort((a, b) => rank(a) - rank(b));
+  if (!sites.length) { $('#shits').innerHTML = `<div class="empty"><b>(・_・;)</b>Хайх эх сурвалж алга.${swErr ? `<br><span class="err">${esc(swErr)}</span>` : ''}<br><br><a class="btn" href="#/browse">Эх сурвалжууд</a></div>`; return; }
+  const job = SRCH = {stop: false};
+  let done = 0, hits = 0;
+  const miss = [];
+  const prog = () => {
+    $('#sprog').hidden = false;
+    $('#stxt').textContent = done < sites.length && !job.stop ? `${sites.length} эх сурвалжаас хайж байна… ${done}/${sites.length} · ${hits} эх сурвалжид олдсон` : `Дууслаа — ${hits}/${sites.length} эх сурвалжид олдсон`;
+    $('#sbar').style.width = (done / sites.length * 100) + '%';
+    $('#sstop').hidden = done >= sites.length || job.stop;
+    if (miss.length) { const d = $('#smiss'); d.hidden = false; d.querySelector('summary').textContent = `Олдоогүй / алдаатай: ${miss.length}`; }
+  };
+  $('#sstop').onclick = () => { job.stop = true; prog(); };
+  prog();
+  const one = async s => {
+    try {
+      const r = await api(`/browse/${enc(s.id)}?mode=search&q=${enc(q)}`);
+      if (job.stop || my !== gen) return;
+      if (r.items.length) {
+        hits++;
+        $('#shits').insertAdjacentHTML('beforeend', `<div class="shit"><div class="hd"><img src="${s.own ? img(s.icon || '', '') : img(s.icon, s.id)}" onerror="this.style.visibility='hidden'">${esc(s.name)}
+          <span class="muted" style="font-weight:400;font-size:12px">${esc(s.lang || '')} · ${r.items.length}${r.has_next ? '+' : ''}</span><a class="more" href="#/browse/${enc(s.id)}?mode=search&q=${enc(q)}">Бүгдийг харах →</a></div>
+          <div class="srow">${r.items.slice(0, 14).map(m => tile(m, s.id)).join('')}</div></div>`);
+      } else miss.push(`<div class="item"><div class="grow"><div class="name" style="font-size:13px">${esc(s.name)}</div></div><span class="muted">олдсонгүй</span></div>`);
+    } catch (e) {
+      if (job.stop || my !== gen) return;
+      miss.push(`<div class="item"><div class="grow"><div class="name" style="font-size:13px">${esc(s.name)}</div><div class="sub err">${esc(e.message)}</div></div></div>`);
+    } finally {
+      if (!job.stop && my === gen) { done++; $('#smiss .list').innerHTML = miss.join(''); prog(); }
+    }
+  };
+  // ажил хуваарилагч: нэг зэрэг 5 хайлт
+  const queue = sites.slice();
+  const worker = async () => { while (queue.length && !job.stop && my === gen) await one(queue.shift()); };
+  await Promise.all(Array.from({length: Math.min(5, queue.length)}, worker));
+  if (my === gen && !job.stop && !hits) $('#shits').innerHTML = `<div class="empty"><b>(｡•́︿•̀｡)</b>«${esc(q)}» олдсонгүй. Өөр нэрээр (англи / ромаар) хайж үзээрэй.</div>`;
+};
+
+const tile = (m, sid) => `<a class="tile" href="#/manga?source=${encodeURIComponent(sid)}&id=${encodeURIComponent(m.id)}"><img loading="lazy" src="${img(m.cover, sid)}"><div class="t">${esc(m.title)}</div></a>`;
+
+function siteForm(s = {}) {
+  return `<label>Нэр</label><input type="text" id="f_name" value="${esc(s.name||'')}">
+    <label>Үндсэн хаяг (base URL)</label><input type="text" id="f_base" value="${esc(s.base_url||'')}" placeholder="https://example.com">
+    <label>Загвар</label><select id="f_type">${['madara','mangathemesia','nokara','mangadex','generic'].map(t => `<option ${s.type===t?'selected':''}>${t}</option>`).join('')}</select>
+    <label>Манга замын нэр (ихэвчлэн manga эсвэл series)</label><input type="text" id="f_path" value="${esc(s.manga_path||'manga')}">
+    <label>Хэл (MangaDex-д: en, ja, ko, mn …)</label><input type="text" id="f_lang" value="${esc(s.lang||'en')}">`;
+}
+const readForm = () => ({name: $('#f_name').value.trim(), base_url: $('#f_base').value.trim(), type: $('#f_type').value, manga_path: $('#f_path').value.trim() || 'manga', lang: $('#f_lang').value.trim() || 'en'});
+function modal(html) { const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<div>${html}</div>`; m.onclick = e => e.target === m && m.remove(); document.body.append(m); return m; }
+function addSite() {
+  const m = modal(`<h3>Сайт нэмэх</h3><div class="row"><input type="text" id="d_url" style="flex:1" placeholder="Сайтын хаяг — https://..."><button class="btn" id="d_btn">Таних</button></div>
+    <div id="d_form" style="margin-top:8px">${siteForm()}</div><div class="row" style="justify-content:flex-end;margin-top:16px"><button class="btn ghost" onclick="this.closest('.modal').remove()">Болих</button><button class="btn fill" id="d_save">Нэмэх</button></div>`);
+  m.querySelector('#d_btn').onclick = async () => {
+    try { toast('Шалгаж байна…'); const d = await api('/detect', {method: 'POST', body: {url: $('#d_url').value.trim()}}); $('#d_form').innerHTML = siteForm(d); toast('Загвар: ' + d.type); }
+    catch (e) { toast('Алдаа: ' + e.message, 5000); }
+  };
+  m.querySelector('#d_save').onclick = async () => { const f = readForm(); if (!f.name || !f.base_url) return toast('Нэр, хаягаа бөглө'); await api('/sources', {method: 'POST', body: f}); m.remove(); route(); };
+}
+function editSite(s) {
+  const m = modal(`<h3>Засах: ${esc(s.name)}</h3>${siteForm(s)}<div class="row" style="justify-content:flex-end;margin-top:16px"><button class="btn ghost" onclick="this.closest('.modal').remove()">Болих</button><button class="btn fill" id="e_save">Хадгалах</button></div>`);
+  m.querySelector('#e_save').onclick = async () => { await api('/sources/' + encodeURIComponent(s.id), {method: 'PUT', body: readForm()}); m.remove(); route(); };
+}
+async function delSite(id) { if (confirm('Энэ эх сурвалжийг устгах уу?')) { await api('/sources/' + encodeURIComponent(id), {method: 'DELETE'}); route(); } }
+
+async function browseSource(sid) {
+  const my = gen;
+  const sites = sid.startsWith('sw:') ? (SW.length ? SW : (SW = await api('/suwayomi/sources'))) : await api('/sources');
+  if (my !== gen) return;
+  const s = sites.find(x => x.id === sid);
+  if (s) api('/ui/used', {method: 'POST', body: {id: sid}});
+  if (!s) throw new Error('Эх сурвалж олдсонгүй');
+  const p = qs(); let mode = p.mode || 'popular', q = p.q || '', page = 1, loading = false, more = true;
+  head(s.name, '', true);
+  V.innerHTML = `<div class="tabs"><a data-m="popular">Алдартай</a><a data-m="latest">Шинэ</a></div>
+    <div class="row"><input type="text" id="sq" style="flex:1" placeholder="${esc(s.name)} дотроос хайх…" value="${esc(q)}"><button class="btn fill" id="sbtn">Хайх</button></div>
+    <div class="grid" id="sg"></div><div id="sm" style="text-align:center;margin:20px"></div>`;
+  const tabs = () => V.querySelectorAll('.tabs a').forEach(a => a.classList.toggle('on', a.dataset.m === mode));
+  V.querySelectorAll('.tabs a').forEach(a => a.onclick = () => { mode = a.dataset.m; q = ''; $('#sq').value = ''; reset(); });
+  $('#sbtn').onclick = () => { q = $('#sq').value.trim(); mode = q ? 'search' : 'popular'; reset(); };
+  $('#sq').onkeydown = e => e.key === 'Enter' && $('#sbtn').click();
+  async function load() {
+    if (loading || !more) return; loading = true; $('#sm').innerHTML = '<div class="spin" style="margin:10px auto"></div>';
+    try {
+      const r = await api(`/browse/${encodeURIComponent(sid)}?mode=${mode}&q=${encodeURIComponent(q)}&page=${page}`);
+      $('#sg').insertAdjacentHTML('beforeend', r.items.map(m => tile(m, sid)).join(''));
+      more = r.has_next && r.items.length > 0; page++;
+      $('#sm').innerHTML = more ? '<button class="btn" id="moreBtn">Цааш үзэх</button>' : (page === 2 && !r.items.length ? '<div class="muted">Юу ч олдсонгүй</div>' : '');
+      if (more) $('#moreBtn').onclick = load;
+    } catch (e) { $('#sm').innerHTML = `<div class="err">${esc(e.message)}</div><br><button class="btn" onclick="route()">Дахин</button>`; }
+    loading = false;
+  }
+  function reset() { page = 1; more = true; $('#sg').innerHTML = ''; tabs(); load(); }
+  V.onscroll = () => { if (location.hash.startsWith('#/browse/') && V.scrollTop + V.clientHeight > V.scrollHeight - 400) load(); };
+  reset();
+}
+
+// ---------------- manga detail ----------------
+R.manga = async () => {
+  const {source, id, refresh} = qs();
+  head('…', '', true); spin(); const my = gen;
+  const m = await api(`/manga?source=${enc(source)}&id=${enc(id)}${refresh ? '&refresh=1' : ''}`);
+  if (my !== gen) return;
+  head(m.title, `<button class="icon" title="Шинэчлэх" onclick="location.replace('${mlink(source, id)}&refresh=1')">${IC.refresh}</button>`, true);
+  if (m.in_library) api('/library/seen', {method: 'POST', body: {key: `${source}|${id}`}});
+  const chs = m.chapters, mref = {id, title: m.title, cover: m.cover};
+  const ascending = chs.length > 1 && chs[0].number >= 0 && chs[0].number < chs[chs.length - 1].number;
+  let order = pref('chSort', 'desc'), filter = 'all';
+  const sel = new Set();
+  const unread = () => chs.filter(c => !c.read).length;
+  const readBtn = () => { const r = m.resume; return r ? `<a class="btn fill big" href="${rlink(source, id, r.id)}">▶ ${r.started ? 'Үргэлжлүүлэх' : 'Уншиж эхлэх'} · ${esc(r.name)}</a>` : (chs.length ? `<a class="btn big" href="${rlink(source, id, chs[ascending ? 0 : chs.length - 1].id)}">↺ Эхнээс нь унших</a>` : ''); };
+  V.innerHTML = `
+    <div class="detail"><div class="bgc" style="background-image:url('${img(m.cover, source)}')"></div><img src="${img(m.cover, source)}">
+      <div style="flex:1;min-width:0"><h2>${esc(m.title)}</h2>
+        <div class="muted">${esc(m.source_name)}${m.author ? ' · ' + esc(m.author) : ''}${m.status ? ' · ' + esc(m.status) : ''} · ${chs.length} бүлэг · <span id="unr"></span></div>
+        <div class="chips">${m.genres.slice(0, 14).map(g => `<span class="chip">${esc(g)}</span>`).join('')}</div>
+        <div class="desc" onclick="this.classList.toggle('open')">${esc(m.description)}</div>
+        <div class="row" style="margin-top:14px">${readBtn()}
+          <button class="btn ${m.in_library ? '' : 'fill'}" id="libBtn"></button>
+          <button class="btn ghost" id="catBtn" ${m.in_library ? '' : 'hidden'}></button>
+          <button class="btn" onclick="dlSel('new')">Татаагүйг татах</button>
+          ${m.url ? `<a class="btn ghost" href="${esc(m.url)}" target="_blank">Вэбээр нээх</a>` : ''}
+        </div></div></div>
+    <div class="sticky row"><label class="row" style="gap:6px"><input type="checkbox" id="all" style="accent-color:var(--pink)"> Бүгд</label>
+      <input type="number" id="rf" style="width:74px" placeholder="эхлэх"> – <input type="number" id="rt" style="width:74px" placeholder="дуусах"><button class="btn ghost" id="rbtn">Сонгох</button>
+      <select id="cfilter"><option value="all">Бүх бүлэг</option><option value="unread">Уншаагүй</option><option value="read">Уншсан</option><option value="dl">Татагдсан</option><option value="nodl">Татаагүй</option></select>
+      <button class="btn ghost" id="osort" title="Эрэмбэ солих"></button>
+      <span style="flex:1"></span><span id="selc" class="muted"></span>
+      <span id="selAct" class="row" hidden><button class="btn fill" onclick="dlSel('sel')">Татах</button><button class="btn" onclick="markSel(true)">Уншсан</button><button class="btn" onclick="markSel(false)">Уншаагүй</button>
+        <button class="btn ghost" onclick="markBefore()" title="Сонгосон бүлэг ба түүнээс өмнөх бүгдийг уншсан болгох">Өмнөхийг уншсан</button><button class="btn ghost" onclick="delSel()">Татсаныг устгах</button></span></div>
+    <div id="chs"></div>`;
+  const draw = () => {
+    const desc = ascending ? chs.slice().reverse() : chs;
+    let list = order === 'desc' ? desc : desc.slice().reverse();
+    list = list.filter(c => filter === 'all' || (filter === 'unread' && !c.read) || (filter === 'read' && c.read) || (filter === 'dl' && c.downloaded) || (filter === 'nodl' && !c.downloaded));
+    $('#chs').innerHTML = list.map(c => { const i = chs.indexOf(c); return `<div class="ch ${c.read ? 'isread' : ''}"><input type="checkbox" data-i="${i}" ${sel.has(i) ? 'checked' : ''}>
+      ${c.locked ? `<span class="cname locked" title="Crown эрх шаардлагатай — сайтын эрхгүйгээр унших, татах боломжгүй">${esc(c.name)}</span><span class="tag lock">🔒 Crown</span>` : `<a class="cname" href="${rlink(source, id, c.id)}">${esc(c.name)}</a>`}
+      ${!c.read && c.total && c.page ? `<span class="muted" style="font-size:12px">${c.page + 1}/${c.total}</span>` : ''}
+      ${c.downloaded ? '<span class="tag">татагдсан</span>' : ''}<span class="muted cd">${esc(c.date)}</span>
+      <button class="icon sm" data-rd="${i}" title="${c.read ? 'Уншаагүй болгох' : 'Уншсан болгох'}">${c.read ? IC.eyeOff : IC.eye}</button>
+      ${c.locked ? '<span style="width:28px"></span>' : c.downloaded ? `<button class="icon sm" data-del="${i}" title="Татсаныг устгах">${IC.del}</button>` : `<button class="icon sm" data-dl="${i}" title="Татах">${IC.dl}</button>`}</div>`; }).join('')
+      || '<div class="empty" style="padding:50px 0">Бүлэг алга</div>';
+    $('#osort').textContent = order === 'desc' ? '↓ Шинэ нь эхэнд' : '↑ Хуучин нь эхэнд';
+    $('#selc').textContent = sel.size ? sel.size + ' сонгосон' : '';
+    $('#selAct').hidden = !sel.size;
+    $('#unr').textContent = unread() ? `${unread()} уншаагүй` : 'бүгдийг уншсан ✓';
+    const b = $('#libBtn'); b.textContent = m.in_library ? '✓ Номын санд байна' : '+ Номын санд нэмэх'; b.classList.toggle('fill', !m.in_library);
+    $('#catBtn').hidden = !m.in_library; $('#catBtn').textContent = '🏷 ' + (m.category || 'Ангилал');
+  };
+  const mark = async (idx, read) => {
+    if (!idx.length) return;
+    await api('/progress/mark', {method: 'POST', body: {source_id: source, manga_id: id, ids: idx.map(i => chs[i].id), read}});
+    idx.forEach(i => { chs[i].read = read; if (!read) chs[i].page = 0; }); draw();
+  };
+  const dl = async list => {
+    const nLocked = list.filter(c => c.locked).length;
+    list = list.filter(c => !c.locked);
+    if (!list.length) return toast(nLocked ? '🔒 Сонгосон бүлгүүд Crown эрх шаарддаг тул татах боломжгүй' : 'Татах бүлэг алга', 4000);
+    list = list.slice().sort((a, b) => (ascending ? 1 : -1) * (chs.indexOf(a) - chs.indexOf(b))); // хуучнаас нь эхэлж татна
+    const r = await api('/download', {method: 'POST', body: {source_id: source, manga: mref, chapters: list}});
+    toast(`${r.added} бүлэг дараалалд нэмэгдлээ` + (nLocked ? ` · ${nLocked} 🔒 түгжээтэй бүлгийг алгаслаа` : ''), 4000); badges();
+  };
+  const del = async list => {
+    list = list.filter(c => c.downloaded);
+    if (!list.length || !confirm(`${list.length} татагдсан бүлгийг дискнээс устгах уу?`)) return;
+    await api('/chapters/delete', {method: 'POST', body: {source_id: source, manga_title: m.title, names: list.map(c => c.name)}});
+    list.forEach(c => c.downloaded = false); draw();
+  };
+  $('#chs').onclick = e => {
+    const t = e.target.closest('[data-rd],[data-dl],[data-del]'); if (!t) return;
+    if (t.dataset.rd) mark([+t.dataset.rd], !chs[+t.dataset.rd].read);
+    else if (t.dataset.dl) dl([chs[+t.dataset.dl]]);
+    else del([chs[+t.dataset.del]]);
+  };
+  $('#chs').onchange = e => { const i = +e.target.dataset.i; e.target.checked ? sel.add(i) : sel.delete(i); $('#selc').textContent = sel.size ? sel.size + ' сонгосон' : ''; $('#selAct').hidden = !sel.size; };
+  $('#all').onchange = e => { sel.clear(); if (e.target.checked) V.querySelectorAll('#chs input').forEach(b => sel.add(+b.dataset.i)); draw(); };
+  $('#rbtn').onclick = () => { const f = $('#rf').value === '' ? -Infinity : +$('#rf').value, t = $('#rt').value === '' ? Infinity : +$('#rt').value; sel.clear(); chs.forEach((c, i) => { if (c.number >= f && c.number <= t) sel.add(i); }); draw(); };
+  $('#cfilter').onchange = e => { filter = e.target.value; draw(); };
+  $('#osort').onclick = () => { order = order === 'desc' ? 'asc' : 'desc'; setPref('chSort', order); draw(); };
+  $('#libBtn').onclick = async () => {
+    if (m.in_library) await api('/library?key=' + enc(`${source}|${id}`), {method: 'DELETE'});
+    else await api('/library', {method: 'POST', body: {source_id: source, manga: mref, chapters: chs}});
+    m.in_library = !m.in_library; toast(m.in_library ? 'Номын санд нэмлээ' : 'Номын сангаас хаслаа'); draw();
+  };
+  $('#catBtn').onclick = async () => {
+    const cats = [...new Set((await api('/library')).map(x => x.category).filter(Boolean))].sort();
+    const mo = modal(`<h3>Ангилал</h3><div class="cats" style="margin:0 0 10px">${cats.map(c => `<a data-c="${esc(c)}" class="${c === m.category ? 'on' : ''}">${esc(c)}</a>`).join('') || '<span class="muted">Одоогоор ангилал алга</span>'}</div>
+      <label>Шинэ эсвэл өөр ангилал</label><input type="text" id="catIn" value="${esc(m.category || '')}" placeholder="жишээ: Уншиж байгаа, Дууссан, Дараа унших">
+      <div class="row" style="justify-content:flex-end;margin-top:16px"><button class="btn ghost" id="catNo">Ангилалгүй</button><button class="btn fill" id="catOk">Хадгалах</button></div>`);
+    const set = async c => { await api('/library', {method: 'PUT', body: {key: `${source}|${id}`, category: c}}); m.category = c.trim(); mo.remove(); draw(); };
+    mo.querySelectorAll('.cats a').forEach(a => a.onclick = () => set(a.dataset.c));
+    mo.querySelector('#catOk').onclick = () => set(mo.querySelector('#catIn').value);
+    mo.querySelector('#catNo').onclick = () => set('');
+  };
+  const picked = () => [...sel].map(i => chs[i]);
+  window.dlSel = which => dl(which === 'all' ? chs : which === 'new' ? chs.filter(c => !c.downloaded) : picked());
+  window.markSel = read => mark([...sel], read);
+  window.delSel = () => del(picked());
+  window.markBefore = () => {
+    const pos = i => ascending ? i : chs.length - 1 - i;           // хуучнаас шинэ рүү байрлал
+    const top = Math.max(...[...sel].map(pos));
+    mark(chs.map((c, i) => i).filter(i => pos(i) <= top), true);
+  };
+  draw();
+};
+
+// ---------------- downloads ----------------
+R.downloads = async () => {
+  const my = gen;
+  const render = async () => {
+    const {paused, jobs} = await api('/queue');
+    if (my !== gen) return;
+    head('Татах дараалал', `
+      <button class="icon" title="Алдаатайг дахин" onclick="api('/queue/retry',{method:'POST'}).then(route)">${IC.refresh}</button>
+      <button class="icon" title="Дууссаныг цэвэрлэх" onclick="api('/queue/clear',{method:'POST'}).then(route)">${IC.del}</button>
+      <button class="icon" title="${paused ? 'Үргэлжлүүлэх' : 'Түр зогсоох'}" onclick="api('/queue/${paused ? 'resume' : 'pause'}',{method:'POST'}).then(route)">${paused ? IC.play : IC.pause}</button>`);
+    if (!jobs.length) { V.innerHTML = '<div class="empty"><b>(;￣Д￣)</b>Татах зүйл алга</div>'; return; }
+    const order = {downloading: 0, queued: 1, error: 2, done: 3, skipped: 3};
+    jobs.sort((a, b) => order[a.status] - order[b.status] || a.id - b.id);
+    V.innerHTML = (paused ? '<div class="muted" style="margin-bottom:10px">⏸ Түр зогссон</div>' : '') + `<div class="list">${jobs.map(j => `
+      <div class="item"><img class="thumb" src="${img(j.cover, j.source_id)}"><div class="grow">
+        <div class="name">${esc(j.manga_title)}</div><div class="sub">${esc(j.chapter_name)} ${j.total ? `— ${j.done}/${j.total}` : ''}</div>
+        ${j.status === 'downloading' ? `<div class="bar"><i style="width:${j.total ? j.done / j.total * 100 : 3}%"></i></div>` : ''}
+        ${j.error ? `<div class="err" style="font-size:12px">${esc(j.error)}</div>` : ''}</div>
+        <span class="st ${j.status}">${({queued:'хүлээгдэж буй',downloading:'татаж байна',done:'дууссан',skipped:'аль хэдийн байсан',error:'алдаа'})[j.status] || j.status}</span>
+        ${j.status === 'error' ? `<button class="icon" title="Дахин" onclick="api('/queue/retry',{method:'POST',body:{id:${j.id}}})">${IC.refresh}</button>` : ''}
+        <button class="icon" title="Хасах" onclick="api('/queue/${j.id}',{method:'DELETE'})">${IC.del}</button></div>`).join('')}</div>`;
+  };
+  await render();
+  timer = setInterval(() => location.hash.startsWith('#/downloads') && render(), 1200);
+};
+
+// ---------------- local ----------------
+R.local = async () => {
+  head('Татагдсан', `<button class="icon" title="Хавтас нээх" onclick="api('/local/open-folder',{method:'POST',body:{path:''}})">${IC.folder}</button>`);
+  const my = gen, tree = await api('/local');
+  if (my !== gen) return;
+  if (!tree.length) { V.innerHTML = '<div class="empty"><b>(・・;)</b>Одоогоор татагдсан бүлэг алга</div>'; return; }
+  window._loc = tree.flatMap(m => m.chapters);
+  V.innerHTML = tree.map(m => `<details class="loc" open><summary><span class="section" style="display:inline">${esc(m.title)}</span> <span class="muted" style="font-size:13px">· ${esc(m.source)} · ${m.chapters.length} бүлэг</span></summary>
+    <div class="list">${m.chapters.map(c => `<div class="item"><a class="grow" href="#/read?path=${enc(c)}">${esc(c.split('/').pop().replace(/\.cbz$/, ''))}</a>${c.endsWith('.cbz') ? '<span class="chip">CBZ</span>' : ''}
+      <button class="icon sm" title="Устгах" onclick="delLocal(${_loc.indexOf(c)})">${IC.del}</button></div>`).join('')}</div></details>`).join('');
+};
+async function delLocal(i) { if (confirm('Энэ бүлгийг дискнээс устгах уу?')) { await api('/local/delete', {method: 'POST', body: {path: _loc[i]}}); route(); } }
+R.read = async () => {
+  const {path} = qs(), my = gen;
+  const all = (await api('/local')).flatMap(m => m.chapters);
+  const i = all.indexOf(path), parts = path.split('/'), nm = p => p.split('/').pop().replace(/\.cbz$/, '');
+  const names = await api('/local/pages?path=' + enc(path));
+  if (my !== gen) return;
+  const same = all.filter(p => p.split('/').slice(0, 2).join('/') === parts.slice(0, 2).join('/'));
+  openReader({title: parts[1], sub: nm(path), srcs: names.map(n => `/api/local/page?path=${enc(path)}&name=${enc(n)}`), start: 0,
+    prev: all[i - 1] && same.includes(all[i - 1]) ? '#/read?path=' + enc(all[i - 1]) : null, next: all[i + 1] && same.includes(all[i + 1]) ? '#/read?path=' + enc(all[i + 1]) : null,
+    chapters: same.map(p => ({label: nm(p), href: '#/read?path=' + enc(p), cur: p === path})), back: '#/local'});
+};
+
+// ---------------- reader ----------------
+R.reader = async () => {
+  const {source, manga, chapter} = qs(), my = gen;
+  document.body.classList.add('reading'); V.innerHTML = '<div class="spin" style="margin-top:40vh"></div>';
+  let r;
+  try { r = await api(`/reader?source=${enc(source)}&manga=${enc(manga)}&chapter=${enc(chapter)}`); }
+  catch (e) { if (my !== gen) return; V.innerHTML = `<div class="empty"><b>(;´Д\`)</b><span class="err">${esc(e.message)}</span><br><br><a class="btn" href="${mlink(source, manga)}">Буцах</a> <button class="btn fill" onclick="route()">Дахин оролдох</button></div>`; return; }
+  if (my !== gen) return;
+  const mref = {id: manga, title: r.title, cover: r.cover}, cref = {id: r.chapter.id, name: r.chapter.name};
+  openReader({title: r.title, sub: r.chapter.name + (r.local ? ' · татагдсан' : ''), start: r.page,
+    srcs: r.pages.map(p => p.local ? `/api/local/page?path=${enc(p.local)}&name=${enc(p.name)}` : img(p.url, source)),
+    prev: r.prev && rlink(source, manga, r.prev.id), next: r.next && rlink(source, manga, r.next.id), nextName: r.next && r.next.name,
+    chapters: r.chapters.map(c => ({label: c.name, href: rlink(source, manga, c.id), cur: c.id === r.chapter.id})), back: mlink(source, manga),
+    onProgress: (page, total, read) => api('/progress', {method: 'POST', body: {source_id: source, manga: mref, chapter: cref, page, total, read}}).catch(() => {}),
+    download: r.local ? null : () => api('/download', {method: 'POST', body: {source_id: source, manga: mref, chapters: [r.chapter]}}).then(() => { toast('Дараалалд нэмлээ'); badges(); })});
+};
+
+function openReader(o) {
+  document.body.classList.add('reading');
+  const n = o.srcs.length;
+  let sentFin = false, mode = pref('rdMode', 'webtoon'), cur = Math.min(Math.max(0, o.start || 0), Math.max(0, n - 1)), sent = -1, hideT = null, progT = null, finished = false;
+  const back = () => { if (history.length > 1) history.back(); else back(); };
+  const go = href => { if (href) { flush(); location.replace(href); } };
+  V.innerHTML = `<div class="rd" id="rd">
+    <div class="rbar rtop"><button class="icon" id="rback" title="Буцах (Esc)">${IC.back}</button>
+      <div class="rt"><b>${esc(o.title)}</b><span>${esc(o.sub)}</span></div>
+      <select id="rch" title="Бүлэг сонгох">${o.chapters.map((c, i) => `<option value="${i}" ${c.cur ? 'selected' : ''}>${esc(c.label)}</option>`).join('')}</select>
+      <span style="flex:1"></span>
+      ${o.download ? `<button class="icon" id="rdl" title="Энэ бүлгийг татах">${IC.dl}</button>` : ''}
+      <button class="btn ghost" id="rmode" title="Горим солих (M)"></button>
+      <button class="icon" id="rset" title="Тохиргоо">${IC.gear}</button><button class="icon" id="rfs" title="Бүтэн дэлгэц (F)">${IC.fs}</button></div>
+    <div class="rpanel" id="rpanel" hidden>
+      <div class="lab">Өргөн <output id="rwv"></output></div><input type="range" id="rw" min="400" max="2000" step="20">
+      <div class="lab" id="rfitL">Хуудас багтаах</div><select id="rfit"><option value="height">Өндрөөр</option><option value="width">Өргөнөөр</option></select>
+      <label class="rchk"><input type="checkbox" id="rgap"> Хуудас хооронд зай</label>
+      <label class="rchk"><input type="checkbox" id="rauto"> Дуусахад дараагийн бүлэг рүү автоматаар</label>
+      <div class="lab">Дэвсгэр</div><div class="row" id="rbg">${['#000000', '#141014', '#2a2a2a', '#f4f1ea'].map(c => `<a data-c="${c}" style="background:${c}"></a>`).join('')}</div>
+      <div class="muted" style="font-size:11.5px;margin-top:10px;line-height:1.6">Space / ↓ доош · ← → хуудас · [ ] бүлэг · M горим · F бүтэн дэлгэц · + − өргөн</div></div>
+    <div class="rpages" id="rp"></div>
+    <div class="rbar rbot"><button class="btn ghost" id="rprev" ${o.prev ? '' : 'disabled'}>← Өмнөх бүлэг</button>
+      <input type="range" id="rs" min="1" max="${Math.max(1, n)}" step="1"><span id="rn"></span>
+      <button class="btn ${o.next ? 'fill' : 'ghost'}" id="rnext" ${o.next ? '' : 'disabled'}>Дараах бүлэг →</button></div></div>`;
+  const rd = $('#rd'), rp = $('#rp');
+  const endCard = () => `<div class="rend"><div class="muted">Бүлэг дууслаа</div><h3>${esc(o.sub)}</h3>
+    ${o.next ? `<button class="btn fill big" id="rendN">Дараах бүлэг${o.nextName ? ' · ' + esc(o.nextName) : ''} →</button>` : '<div class="muted">Энэ бол хамгийн сүүлийн бүлэг ✓</div>'}
+    <br><a class="btn ghost" href="${o.back}" style="margin-top:12px;display:inline-block">Бүлгийн жагсаалт</a></div>`;
+  const style = () => {
+    const w = +pref('rdW', 900);
+    rd.style.setProperty('--rw', w + 'px'); rd.style.setProperty('--rbg', pref('rdBg', '#000000')); rd.style.setProperty('--rgap', pref('rdGap', '0') === '1' ? '14px' : '0px');
+    $('#rw').value = w; $('#rwv').textContent = w + ' px'; $('#rfit').value = pref('rdFit', 'height'); $('#rgap').checked = pref('rdGap', '0') === '1'; $('#rauto').checked = pref('rdAuto', '0') === '1';
+    $('#rmode').textContent = mode === 'webtoon' ? '▤ Webtoon' : '▯ Хуудсаар';
+    $('#rfitL').hidden = $('#rfit').hidden = mode !== 'paged';
+    rp.dataset.fit = pref('rdFit', 'height');
+    document.querySelectorAll('#rbg a').forEach(a => a.classList.toggle('on', a.dataset.c === pref('rdBg', '#000000')));
+  };
+  const flush = () => { clearTimeout(progT); if (o.onProgress && n && (cur !== sent || (finished && !sentFin))) { sent = cur; sentFin = finished; o.onProgress(cur, n, finished || cur >= n - 1); } };
+  const setCur = i => {
+    cur = Math.min(Math.max(0, i), n - 1); $('#rs').value = cur + 1; $('#rn').textContent = `${cur + 1} / ${n}`;
+    clearTimeout(progT); progT = setTimeout(flush, 1200);
+  };
+  const loadImg = im => {
+    if (im.dataset.st) return; im.dataset.st = 'l'; let tries = 0;
+    im.onload = () => { im.dataset.st = 'ok'; im.classList.add('ok'); };
+    im.onerror = () => { if (++tries <= 2) setTimeout(() => { im.src = im.dataset.src + (im.dataset.src.includes('?') ? '&' : '?') + 'retry=' + tries; }, 900 * tries); else { im.dataset.st = ''; im.classList.add('bad'); im.alt = `Хуудас ${+im.dataset.i + 1} ачаалагдсангүй — дарж дахин оролдоно`; im.onclick = () => { im.classList.remove('bad'); im.onclick = null; loadImg(im); }; } };
+    im.src = im.dataset.src;
+  };
+  let io = null;
+  const render = () => {
+    if (io) io.disconnect();
+    rp.className = 'rpages ' + mode; V.onscroll = null; V.scrollTop = 0;
+    if (!n) { rp.innerHTML = '<div class="empty"><span class="err">Энэ бүлэгт хуудас олдсонгүй</span></div>'; return; }
+    if (mode === 'webtoon') {
+      rp.innerHTML = o.srcs.map((s, i) => `<img data-i="${i}" data-src="${esc(s)}" alt="">`).join('') + endCard();
+      const imgs = [...rp.querySelectorAll('img')];
+      io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { loadImg(e.target); io.unobserve(e.target); } }), {root: V, rootMargin: '2500px 0px'});
+      imgs.forEach(im => io.observe(im));
+      let tk = false;
+      V.onscroll = () => { if (tk) return; tk = true; requestAnimationFrame(() => { tk = false;
+        const mid = V.getBoundingClientRect().top + V.clientHeight * 0.4; let c = cur;
+        for (const im of imgs) { const b = im.getBoundingClientRect(); if (b.top <= mid && b.bottom > mid) { c = +im.dataset.i; break; } }
+        if (V.scrollTop + V.clientHeight >= V.scrollHeight - 80) { c = n - 1; if (!finished) { finished = true; flush(); if (pref('rdAuto', '0') === '1' && o.next) toast('Дараагийн бүлэг рүү шилжихийн тулд доош дахин гүйлгэ / Space'); } }
+        if (c !== cur) setCur(c); }); };
+      if (cur > 0) { loadImg(imgs[cur]); requestAnimationFrame(() => imgs[cur].scrollIntoView()); }
+    } else {
+      rp.innerHTML = `<img id="rimg" alt="">`;
+      show(cur);
+    }
+    const en = $('#rendN'); if (en) en.onclick = () => go(o.next);
+    setCur(cur);
+  };
+  const show = i => {
+    if (i >= n) { finished = true; flush(); if (o.next && pref('rdAuto', '0') === '1') return go(o.next); rp.innerHTML = endCard(); const en = $('#rendN'); if (en) en.onclick = () => go(o.next); rp.dataset.end = '1'; return; }
+    if (rp.dataset.end) { delete rp.dataset.end; rp.innerHTML = `<img id="rimg" alt="">`; }
+    const im = $('#rimg'); im.className = ''; delete im.dataset.st; im.dataset.i = i; im.dataset.src = o.srcs[i]; im.removeAttribute('src'); loadImg(im);
+    for (const k of [1, 2]) if (i + k < n) new Image().src = o.srcs[i + k];
+    V.scrollTop = 0; setCur(i); if (i >= n - 1) { finished = true; }
+  };
+  const page = d => {
+    if (mode === 'paged') { if (rp.dataset.end && d > 0) return go(o.next); if (rp.dataset.end && d < 0) return show(n - 1); if (cur + d < 0) return; show(cur + d); }
+    else { const atEnd = V.scrollTop + V.clientHeight >= V.scrollHeight - 4; if (d > 0 && atEnd && o.next && pref('rdAuto', '0') === '1') return go(o.next); V.scrollBy({top: d * V.clientHeight * 0.88, behavior: 'smooth'}); }
+  };
+  const jump = i => { if (mode === 'paged') show(i); else { const im = rp.querySelector(`img[data-i="${i}"]`); if (im) { loadImg(im); im.scrollIntoView(); setCur(i); } } };
+  const bars = on => { rd.classList.toggle('show', on); clearTimeout(hideT); if (on) hideT = setTimeout(() => { if (!rd.querySelector('.rbar:hover') && $('#rpanel').hidden) rd.classList.remove('show'); }, 2600); };
+  const setMode = m => { mode = m; setPref('rdMode', m); style(); render(); };
+  const fs = () => { try { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); } catch (e) {} };
+  const width = d => { setPref('rdW', Math.min(2000, Math.max(400, +pref('rdW', 900) + d))); style(); };
+  // events
+  rd.onmousemove = e => { if (e.clientY < 90 || e.clientY > innerHeight - 90 || Math.abs(e.movementX) + Math.abs(e.movementY) > 6) bars(true); };
+  rp.onclick = e => {
+    if (e.target.closest('.rend') || e.target.classList.contains('bad')) return;
+    if (!$('#rpanel').hidden) { $('#rpanel').hidden = true; return; }
+    const x = e.clientX / innerWidth;
+    if (mode === 'paged') { if (x > 0.6) page(1); else if (x < 0.4) page(-1); else bars(!rd.classList.contains('show')); }
+    else bars(!rd.classList.contains('show'));
+  };
+  $('#rs').oninput = e => jump(+e.target.value - 1);
+  $('#rprev').onclick = () => go(o.prev); $('#rnext').onclick = () => go(o.next);
+  $('#rch').onchange = e => go(o.chapters[+e.target.value].href);
+  $('#rmode').onclick = () => setMode(mode === 'webtoon' ? 'paged' : 'webtoon');
+  $('#rset').onclick = () => { $('#rpanel').hidden = !$('#rpanel').hidden; bars(true); };
+  $('#rfs').onclick = fs; $('#rback').onclick = back;
+  if (o.download) $('#rdl').onclick = () => o.download();
+  $('#rw').oninput = e => { setPref('rdW', e.target.value); style(); };
+  $('#rfit').onchange = e => { setPref('rdFit', e.target.value); style(); };
+  $('#rgap').onchange = e => { setPref('rdGap', e.target.checked ? '1' : '0'); style(); };
+  $('#rauto').onchange = e => setPref('rdAuto', e.target.checked ? '1' : '0');
+  $('#rbg').onclick = e => { const a = e.target.closest('a'); if (a) { setPref('rdBg', a.dataset.c); style(); } };
+  const key = e => {
+    if (e.target.tagName === 'INPUT' && e.target.type !== 'range' || e.target.tagName === 'SELECT' || e.ctrlKey || e.altKey || e.metaKey) return;
+    const k = e.key; let used = true;
+    if (k === 'Escape') { if (document.fullscreenElement) document.exitFullscreen(); else if (!$('#rpanel').hidden) $('#rpanel').hidden = true; else back(); }
+    else if (k === ' ' || k === 'PageDown') page(e.shiftKey ? -1 : 1);
+    else if (k === 'PageUp') page(-1);
+    else if (k === 'ArrowRight' || k === 'd') mode === 'paged' ? page(1) : V.scrollBy({top: V.clientHeight * 0.88, behavior: 'smooth'});
+    else if (k === 'ArrowLeft' || k === 'a') mode === 'paged' ? page(-1) : V.scrollBy({top: -V.clientHeight * 0.88, behavior: 'smooth'});
+    else if (k === 'ArrowDown' || k === 's' || k === 'j') mode === 'paged' ? V.scrollBy(0, 160) : V.scrollBy(0, 160);
+    else if (k === 'ArrowUp' || k === 'w' || k === 'k') V.scrollBy(0, -160);
+    else if (k === 'Home') jump(0); else if (k === 'End') jump(n - 1);
+    else if (k === ']' || k === 'n') go(o.next); else if (k === '[' || k === 'p') go(o.prev);
+    else if (k === 'm') setMode(mode === 'webtoon' ? 'paged' : 'webtoon');
+    else if (k === 'f') fs(); else if (k === '+' || k === '=') width(60); else if (k === '-') width(-60);
+    else used = false;
+    if (used) e.preventDefault();
+  };
+  document.addEventListener('keydown', key);
+  window._rdClean = () => { document.removeEventListener('keydown', key); flush(); clearTimeout(hideT); if (io) io.disconnect(); if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (e) {} } };
+  style(); render(); bars(true);
+}
+
+// ---------------- settings ----------------
+R.settings = async () => {
+  head('Тохиргоо');
+  const my0 = gen, s = await api('/settings');
+  if (my0 !== gen) return;
+  V.innerHTML = `
+    <div class="setting"><div><div>Татах хавтас</div><div class="muted">Бүлгүүд: хавтас/Эх сурвалж/Манга/Бүлэг</div></div><div class="row"><input type="text" id="s_dir" style="width:420px" value="${esc(s.download_dir)}"><button class="btn ghost" onclick="api('/pick',{method:'POST',body:{kind:'folder'}}).then(r => { if (r.path) $('#s_dir').value = r.path; }).catch(e => toast(e.message))">Сонгох…</button><button class="btn ghost" title="Хавтсыг нээх" onclick="api('/local/open-folder',{method:'POST',body:{path:''}})">📂</button></div></div>
+    <div class="setting"><div><div>CBZ болгож хадгалах</div><div class="muted">Унших программд (CDisplayEx, Tachiyomi/Mihon, Komga) тохиромжтой</div></div><input type="checkbox" id="s_cbz" ${s.cbz ? 'checked' : ''} style="accent-color:var(--pink);width:20px;height:20px"></div>
+    <div class="setting"><div><div>Зэрэг татах бүлэг</div><div class="muted">Өндөр тоо → сайт хаах эрсдэл</div></div><input type="number" id="s_cw" min="1" max="6" value="${s.chapter_workers}" style="width:90px"></div>
+    <div class="setting"><div><div>Бүлэг бүрт зэрэг татах зураг</div></div><input type="number" id="s_pw" min="1" max="12" value="${s.page_workers}" style="width:90px"></div>
+    <div class="setting"><div><div>Шинэ бүлгийг автоматаар татах</div><div class="muted">Номын сан шинэчлэгдэх үед</div></div><input type="checkbox" id="s_auto" ${s.auto_download_new ? 'checked' : ''} style="accent-color:var(--pink);width:20px;height:20px"></div>
+    <div class="setting"><div><div>Номын санг автоматаар шалгах (цаг)</div><div class="muted">0 = унтраах</div></div><input type="number" id="s_upd" min="0" step="1" value="${s.auto_update_hours}" style="width:90px"></div>
+    <div class="setting"><div><div>Cloudflare-тэсвэртэй хүсэлт (curl_cffi)</div></div><span class="${s.curl_cffi ? '' : 'err'}">${s.curl_cffi ? 'Идэвхтэй ✓' : 'Суугаагүй — pip install curl_cffi'}</span></div>
+    <div class="section">Програм</div>
+    <div class="setting"><div><div>Хувилбар</div><div class="muted" id="verInfo">Tengri Downloader</div></div><button class="btn" id="s_chk">Шинэчлэлт шалгах</button></div>
+    <div class="setting"><div><div>Шинэчлэлтийг автоматаар шалгах</div><div class="muted">Асах үед болон 6 цаг тутамд</div></div><input type="checkbox" id="s_autoupd" style="accent-color:var(--pink);width:22px;height:22px"></div>
+    <div class="setting"><div><div>Шинэчлэлтийг автоматаар татаж суулгах</div><div class="muted">Шинэ хувилбарыг цаана нь татаж, дараагийн асалтад өөрөө суулгана</div></div><input type="checkbox" id="s_autoinst" style="accent-color:var(--pink);width:22px;height:22px"></div>
+    <div class="setting"><div><div>Шинэчлэлтийн эх сурвалж</div><div class="muted">Хоосон = анхдагч (GitHub: izurutea5-tech/TengriDownloader). Эсвэл өөр latest.json холбоос</div></div><input type="text" id="s_feed" style="width:360px" placeholder="github:izurutea5-tech/TengriDownloader"></div>
+    <div class="section">Харагдац</div>
+    <div class="setting"><div><div>Өнгөний сэдэв</div><div class="muted">Товч, тодотголын өнгө</div></div><div class="sw" id="s_acc">${Object.entries(ACCENTS).map(([k, c]) => `<a data-k="${k}" title="${k}" style="background:${c[0]}"></a>`).join('')}</div></div>
+    <div class="section">Өгөгдөл</div>
+    <div class="setting"><div><div>Нөөцлөлт</div><div class="muted">Номын сан, уншсан түүх, ангилал, сайтууд, тохиргоог нэг файлд хадгална</div><div class="muted" id="bkInfo"></div></div><button class="btn" id="s_bk">Нөөц үүсгэх</button></div>
+    <div class="setting"><div><div>Сэргээх</div><div class="muted">Нөөц файлын зам (одоогийн номын сан, түүхийг дарж бичнэ)</div></div><div class="row"><input type="text" id="s_rs" style="width:330px" placeholder="…\\data\\backups\\tengri-backup-….json" list="bkList"><datalist id="bkList"></datalist><button class="btn ghost" id="s_rsb">Сэргээх</button></div></div>
+    <div class="setting"><div><div>Зургийн кэш</div><div class="muted" id="cacheInfo">…</div></div><button class="btn ghost" id="s_cc">Цэвэрлэх</button></div>
+    <div class="section">Хөдөлгүүр (өргөтгөлүүдийг ажиллуулагч)</div>
+    <div class="muted" style="font-size:12px">Tengri Downloader нь Suwayomi-ийн серверийг дотроо нуугдмал асааж, өргөтгөлүүдийг ажиллуулдаг. Suwayomi Launcher-ийг тусад нь асаах шаардлагагүй.</div>
+    <div class="setting"><div>Горим</div><select id="s_mode"><option value="builtin" ${s.engine_mode === 'builtin' ? 'selected' : ''}>Дотоод (санал болгох)</option><option value="external" ${s.engine_mode === 'external' ? 'selected' : ''}>Гадаад Suwayomi сервер</option></select></div>
+    <div id="engBox"></div>
+    <div class="ext-only setting"><div>Suwayomi серверийн хаяг</div><input type="text" id="s_swu" style="width:420px" value="${esc(s.suwayomi_url)}"></div>
+    <div class="ext-only setting"><div><div>Нэвтрэх нэр / нууц үг</div><div class="muted">Нэвтрэлт асаагаагүй бол хоосон орхи</div></div>
+      <div class="row"><input type="text" id="s_swn" style="width:200px" value="${esc(s.suwayomi_user)}" placeholder="нэр"><input type="password" id="s_swp" style="width:200px;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:8px 12px" value="" placeholder="нууц үг (өөрчлөхгүй бол хоосон)"></div></div>
+    <div class="int-only setting"><div><div>Порт / санах ой</div><div class="muted">Suwayomi (4567)-оос өөр порт</div></div><div class="row"><input type="number" id="s_ep" style="width:100px" value="${s.engine_port}"><input type="text" id="s_em" style="width:100px" value="${esc(s.engine_memory)}"></div></div>
+    <div style="margin-top:18px"><button class="btn fill" id="s_save">Хадгалах</button></div>`;
+
+  const save = async (quiet) => {
+    await api('/settings', {method: 'POST', body: {download_dir: $('#s_dir').value.trim(), cbz: $('#s_cbz').checked, chapter_workers: +$('#s_cw').value, page_workers: +$('#s_pw').value, auto_download_new: $('#s_auto').checked, auto_update_hours: +$('#s_upd').value,
+      suwayomi_url: $('#s_swu').value.trim(), suwayomi_user: $('#s_swn').value.trim(), suwayomi_pass: $('#s_swp').value,
+      engine_mode: $('#s_mode').value, engine_port: +$('#s_ep').value || 4580, engine_memory: $('#s_em').value.trim() || '1024m'}});
+    if (!quiet) toast('Хадгаллаа');
+  };
+  (async () => {
+    const u = await api('/update').catch(() => null);
+    if (!u) return;
+    $('#s_autoupd').checked = u.auto; $('#s_autoinst').checked = u.auto_install; $('#s_feed').value = (u.feed === 'github:izurutea5-tech/TengriDownloader' ? '' : u.feed);
+    const setVer = () => { const l = u.latest; $('#verInfo').innerHTML = `Tengri Downloader <b>${esc(u.current)}</b>` + (u.frozen ? ' · (exe/app)' : '') + (l ? (l.available ? ` · <span style="color:var(--pink2)">шинэ ${esc(l.version)} гарсан</span>` : ' · <span class="ok">хамгийн сүүлийн ✓</span>') : (u.error ? ` · <span class="err">${esc(u.error)}</span>` : '')); };
+    setVer();
+    if (u.latest && u.latest.available) $('#s_chk').textContent = 'Шинэчлэх…';
+    $('#s_chk').onclick = async () => { $('#s_chk').disabled = true; $('#verInfo').innerHTML = 'Tengri Downloader · шалгаж байна…';
+      try { await api('/update', {method: 'POST', body: {feed: $('#s_feed').value.trim(), auto: $('#s_autoupd').checked}}); } catch (e) {}
+      window._upd = await api('/update?check=1'); $('#s_chk').disabled = false;
+      if (window._upd.latest && window._upd.latest.available) { showUpdateModal(); } else { const uu = window._upd; $('#verInfo').innerHTML = `Tengri Downloader <b>${esc(uu.current)}</b> · ` + (uu.error ? `<span class="err">${esc(uu.error)}</span>` : '<span class="ok">хамгийн сүүлийн ✓</span>'); } };
+    $('#s_autoupd').onchange = $('#s_autoinst').onchange = $('#s_feed').onchange = () => api('/update', {method: 'POST', body: {feed: $('#s_feed').value.trim(), auto: $('#s_autoupd').checked, auto_install: $('#s_autoinst').checked}});
+  })();
+  const accDraw = () => document.querySelectorAll('#s_acc a').forEach(a => a.classList.toggle('on', a.dataset.k === pref('accent', 'cyan')));
+  $('#s_acc').onclick = e => { const a = e.target.closest('a'); if (a) { setPref('accent', a.dataset.k); applyTheme(); accDraw(); } }; accDraw();
+  const bk = async () => { const b = await api('/backup'); $('#bkList').innerHTML = b.files.map(f => `<option value="${esc(f)}">`).join(''); $('#bkInfo').textContent = b.files.length ? 'Сүүлийн нөөц: ' + b.files[0] : 'Хавтас: ' + b.dir; };
+  bk(); api('/cache').then(c => $('#cacheInfo').textContent = (c.bytes / 1048576).toFixed(0) + ' MB — хавтас, уншсан хуудасны түр хуулбар');
+  $('#s_bk').onclick = async () => { const r = await api('/backup', {method: 'POST'}); toast('Нөөц үүслээ: ' + r.path, 6000); bk(); };
+  $('#s_rsb').onclick = async () => { const p = $('#s_rs').value.trim(); if (!p) return toast('Нөөц файлын замаа оруулна уу'); if (!confirm('Одоогийн номын сан, түүхийг нөөцөөр солих уу?')) return;
+    try { const r = await api('/restore', {method: 'POST', body: {path: p}}); toast(`Сэргээлээ — номын санд ${r.library} манга`, 5000); } catch (e) { toast('Алдаа: ' + e.message, 6000); } };
+  $('#s_cc').onclick = async () => { await api('/cache', {method: 'DELETE'}); $('#cacheInfo').textContent = '0 MB'; toast('Кэш цэвэрлэгдлээ'); };
+  $('#s_save').onclick = async () => { const modeChanged = $('#s_mode').value !== s.engine_mode; await save(); if (modeChanged) { await api('/engine/restart', {method: 'POST'}); } };
+  const modeVis = () => { const ext = $('#s_mode').value === 'external'; V.querySelectorAll('.ext-only').forEach(e => e.hidden = !ext); V.querySelectorAll('.int-only').forEach(e => e.hidden = ext); };
+  $('#s_mode').onchange = modeVis; modeVis();
+  const my = gen;
+  const drawEng = async () => {
+    if (my !== gen) return;
+    const e = await api('/engine'); const box = $('#engBox'); if (!box) return;
+    const col = {running: 'var(--ok)', starting: 'var(--pink2)', external: 'var(--ok)'}[e.status] || 'var(--err)';
+    const label = {running: 'Ажиллаж байна', starting: 'Асаж байна…', stopped: 'Зогссон', missing: 'Олдсонгүй', error: 'Алдаа', external: 'Гадаад сервер'}[e.status] || e.status;
+    const imp = e.import;
+    box.innerHTML = `<div class="setting"><div><div>Төлөв: <b style="color:${col}">● ${label}</b></div><div class="muted">${esc(e.message || '')}</div>
+        ${e.found.jar ? `<div class="muted">Хөдөлгүүр: ${esc(e.found.folder)}</div>` : ''}<div class="muted">${esc(e.url)}</div></div>
+        <div class="row">${e.mode === 'builtin' ? (e.status === 'running' || e.status === 'starting' ? `<button class="btn ghost" onclick="api('/engine/restart',{method:'POST'})">Дахин асаах</button><button class="btn ghost" onclick="api('/engine/stop',{method:'POST'})">Зогсоох</button>` : `<button class="btn fill" onclick="api('/engine/start',{method:'POST'})">Асаах</button>`) : ''}</div></div>
+      ${e.mode === 'builtin' ? (() => {
+        const mb = n => (n / 1048576).toFixed(n > 104857600 ? 0 : 1);
+        const pr = imp && imp.running ? `<div style="margin-top:8px"><div class="muted">${esc(imp.phase || '')}${imp.total ? (imp.kind === 'download' && imp.phase.includes('татаж') ? ` — ${mb(imp.done)} / ${mb(imp.total)} MB` : ` — ${imp.done}/${imp.total}`) : '…'}</div>
+            <div class="bar" style="max-width:420px"><i style="width:${imp.total ? Math.round(imp.done / imp.total * 100) : 5}%"></i></div></div>` : '';
+        const res = imp && !imp.running ? `<div class="${imp.error ? 'err' : 'muted'}" style="margin-top:6px">${imp.error ? esc(imp.error) : imp.ok ? 'Суулгалт амжилттай ✓' : ''}</div>` : '';
+        const ex = {windows: 'C:\\Users\\…\\Downloads\\Suwayomi-Server-v2.4.2366-windows-x64.zip', macos: '~/Downloads/Suwayomi-Server-v2.4.2366-macOS-arm64.tar.gz', linux: '~/Downloads/Suwayomi-Server-v2.4.2366-linux-x64.tar.gz'}[e.platform] || '';
+        return `<div class="setting"><div style="flex:1"><div>Хөдөлгүүр суулгах / шинэчлэх</div>
+            <div class="muted">${e.found.jar ? 'Одоогийн: ' + esc(e.found.folder) + (e.found.java ? '' : ` · <span class="err">Java ${e.java_min}+ алга</span>`) : 'Хөдөлгүүр суугаагүй байна.'}</div>
+            <div class="muted">«Автоматаар татах» нь GitHub-аас Suwayomi-ийн сүүлийн хувилбарыг (Java байхгүй бол Java 21-тэй хамт) татаж суулгана — ${esc(e.platform)} дээр ажиллана.</div>${pr}${res}</div>
+          <div class="row">${imp && imp.running ? `<button class="btn ghost" onclick="api('/engine/cancel',{method:'POST'})">Цуцлах</button>` : `<button class="btn fill" onclick="engDl()">⬇ Автоматаар татах</button>`}</div></div>
+        <div class="setting"><div><div>Эсвэл гараар заах</div><div class="muted">Suwayomi-ийн хавтас, .zip (Windows), .tar.gz (Mac/Linux) эсвэл Suwayomi-Server.jar</div></div>
+          <div class="row"><input type="text" id="impPath" style="width:330px" placeholder="${esc(ex)}">
+          <button class="btn ghost" onclick="pickEng('folder')">Хавтас…</button><button class="btn ghost" onclick="pickEng('zip')">Файл…</button><button class="btn" onclick="impEng()">Суулгах</button></div></div>`;
+      })() : ''}`;
+    if (e.status === 'starting' || (imp && imp.running)) { clearTimeout(timer); timer = setTimeout(drawEng, 1500); }
+  };
+  window.engDl = async () => { try { await api('/engine/download', {method: 'POST'}); drawEng(); } catch (e) { toast('Алдаа: ' + e.message, 6000); } };
+  window.pickEng = async kind => { try { const r = await api('/pick', {method: 'POST', body: {kind}}); if (r.path) { $('#impPath').value = r.path; } } catch (e) { toast(e.message); } };
+  window.impEng = async () => { const p = $('#impPath').value.trim(); if (!p) return toast('Замаа оруулна уу'); try { await api('/engine/import', {method: 'POST', body: {path: p}}); drawEng(); } catch (e) { toast('Алдаа: ' + e.message, 6000); } };
+  window.drawEng = drawEng;
+  drawEng();
+  V.addEventListener('click', e => { if (e.target.closest('#engBox button')) setTimeout(drawEng, 600); });
+};
+
+// ---------------- badges ----------------
+async function badges() {
+  try {
+    const {jobs} = await api('/queue'); const n = jobs.filter(j => j.status === 'queued' || j.status === 'downloading').length;
+    $('#dlBadge').hidden = !n; $('#dlBadge').textContent = n;
+    const lib = await api('/library'); const u = lib.reduce((a, m) => a + (m.new || 0), 0);
+    $('#updBadge').hidden = !u; $('#updBadge').textContent = u;
+  } catch {}
+}
+async function engDot() {
+  try { const e = await api('/engine'); const c = {running: 'var(--ok)', external: 'var(--ok)', starting: 'var(--pink2)'}[e.status] || 'var(--err)';
+    $('#engDot').innerHTML = `<span style="color:${c}">●</span> Хөдөлгүүр: ${({running: 'ажиллаж байна', starting: 'асаж байна…', external: 'гадаад', stopped: 'зогссон', missing: 'тохируулаагүй', error: 'алдаа'})[e.status] || e.status}`; } catch {}
+}
+const ACCENTS = {cyan: ['#3fe3ff', '#9af1ff'], yellow: ['#ffc93a', '#ffe08a'], pink: ['#ff4fa3', '#ff9ccb'], violet: ['#8e6bff', '#b7a0ff'], blue: ['#3d8bff', '#82b6ff'], teal: ['#14b8a0', '#5fe0cb'], orange: ['#f5803c', '#ffae7d'], red: ['#f0485a', '#ff8794']};
+function applyTheme() { const c = ACCENTS[pref('accent', 'cyan')] || ACCENTS.cyan; document.documentElement.style.setProperty('--pink', c[0]); document.documentElement.style.setProperty('--pink2', c[1]); }
+applyTheme();
+async function checkUpdate(opts = {}) {
+  let u;
+  try { u = await api('/update' + (opts.force ? '?check=1' : '')); } catch (e) { return null; }
+  window._upd = u;
+  const bar = $('#updbar');
+  // Асах үед шалгалт хийгдээгүй бол нэг удаа албадаж шалгуулна
+  if (u.auto && !u.latest && !u.error && !u.checking && !u.busy && !opts.force && !opts._retry) { return checkUpdate({force: true, _retry: true}); }
+  if (u.checking && !opts._wait) { setTimeout(() => checkUpdate({_wait: true}), 1500); }
+  const installing = u.busy && u.mode === 'install';
+  if (installing) { // суулгаж байх үед дэвшлийг тасралтгүй шалгана
+    if (!document.querySelector('.modal .updprog')) showUpdateModal();
+    setTimeout(() => checkUpdate(), 1200);
+  } else if (u.busy) setTimeout(() => checkUpdate(), 4000); // цаана нь татаж байна
+  const l = u.latest;
+  if (u.staged && !installing && pref('updDismissStaged', '') !== u.staged) {
+    bar.hidden = false;
+    bar.innerHTML = `<div><b>Шинэ хувилбар ${esc(u.staged)}</b> татагдаж бэлэн боллоо <span class="muted">— дараагийн асалтад автоматаар суулгана</span></div>
+      <button class="btn fill" id="updNow">Одоо дахин асаах</button><button class="icon x" id="updX" title="Дараа асаахад суулгана">✕</button>`;
+    $('#updNow').onclick = showUpdateModal;
+    $('#updX').onclick = () => { bar.hidden = true; setPref('updDismissStaged', u.staged); };
+  } else if (l && l.available && u.busy && !installing) {
+    bar.hidden = false;
+    bar.innerHTML = `<div><b>Шинэ хувилбар ${esc(l.version)}</b> <span class="muted">цаана нь татаж байна… ${u.total ? Math.round(u.done / u.total * 100) + '%' : ''}</span></div>`;
+  } else if (l && l.available && !u.busy && !u.staged && pref('updDismiss', '') !== l.version) {
+    bar.hidden = false;
+    bar.innerHTML = `<div><b>Шинэ хувилбар ${esc(l.version)}</b> гарлаа <span class="muted">(одоо ${esc(u.current)})</span></div>
+      <button class="btn fill" id="updSee">Үзэх</button><button class="icon x" id="updX" title="Одоохондоо үгүй">✕</button>`;
+    $('#updSee').onclick = showUpdateModal;
+    $('#updX').onclick = () => { bar.hidden = true; setPref('updDismiss', l.version); };
+  } else if (!u.busy && !u.staged) bar.hidden = true;
+  return u;
+}
+function showUpdateModal() {
+  const u = window._upd || {}, l = u.latest || {};
+  document.querySelector('.modal')?.remove();
+  const ver = l.version || u.staged || '';
+  const m = modal(`<h3>Шинэ хувилбар ${esc(ver)}</h3>
+    <div class="muted">Одоогийн хувилбар: ${esc(u.current || '')}</div>
+    ${l.notes ? `<div class="upd-notes">${esc(l.notes)}</div>` : ''}
+    ${u.frozen ? `<p class="err">Энэ бол .exe/.app хувилбар тул автоматаар шинэчлэх боломжгүй. ${l.page ? `<a href="${esc(l.page)}" target="_blank" style="color:var(--pink2)">Татах хуудас нээх</a>` : 'Шинэ хувилбарыг татаж суулгана уу.'}</p>` : `<p class="muted" style="font-size:12.5px">Номын сан, тохиргоо, өргөтгөлүүд хэвээр үлдэнэ. Шинэчилсний дараа програм дахин асна.</p>`}
+    <div id="updState"></div>
+    <div class="row" style="justify-content:flex-end;margin-top:16px">
+      <button class="btn ghost" id="updLater">Дараа</button>
+      ${u.frozen ? (l.page ? `<button class="btn fill" onclick="IZopen('${esc(l.page)}')">Татах хуудас</button>` : '') : `<button class="btn fill" id="updGo">${u.staged ? '⟳ Одоо дахин асааж суулгах' : '⬇ Шинэчлэх'}</button>`}</div>`);
+  m.querySelector('#updLater').onclick = () => m.remove();
+  const go = m.querySelector('#updGo');
+  if (go) go.onclick = async () => {
+    go.disabled = true; m.querySelector('#updLater').disabled = true;
+    try { await api('/update', {method: 'POST', body: {apply: true}}); } catch (e) { m.querySelector('#updState').innerHTML = `<div class="err">${esc(e.message)}</div>`; go.disabled = false; return; }
+    pollInstall(m);
+  };
+  if (u.busy && u.mode === 'install') pollInstall(m);
+}
+async function pollInstall(m) {
+  const st = m.querySelector('#updState'); m.querySelector('#updGo')?.setAttribute('disabled', '1'); m.querySelector('#updLater')?.setAttribute('disabled', '1');
+  const tick = async () => {
+    let u;
+    try { u = await api('/update'); } catch (e) { st.innerHTML = '<div class="updprog"><i style="width:100%"></i></div><div class="muted">Дахин асааж байна… Хэдэн секундын дараа хуудсаа сэргээнэ үү.</div>'; setTimeout(() => location.reload(), 4000); return; }
+    window._upd = u;
+    if (u.error) { st.innerHTML = `<div class="err">${esc(u.error)}</div>`; const g = m.querySelector('#updGo'); if (g) { g.disabled = false; } m.querySelector('#updLater').disabled = false; return; }
+    const pct = u.total ? Math.round(u.done / u.total * 100) : (u.phase ? 30 : 0);
+    st.innerHTML = `<div class="updprog"><i style="width:${u.ready ? 100 : pct}%"></i></div><div class="muted">${esc(u.phase || 'Эхлүүлж байна')}${u.total && !u.ready ? ` — ${(u.done/1048576).toFixed(1)}/${(u.total/1048576).toFixed(1)} MB` : ''}</div>`;
+    if (u.ready) { st.innerHTML = '<div class="updprog"><i style="width:100%"></i></div><div class="ok">Шинэчиллээ. Дахин асааж байна… 5 секундын дараа хуудас сэргэнэ.</div>'; setTimeout(() => location.reload(), 5000); return; }
+    setTimeout(tick, 900);
+  };
+  tick();
+}
+window.IZopen = u => { try { window.open(u, '_blank'); } catch (e) {} };
+setInterval(badges, 4000); badges();
+checkUpdate(); setInterval(engDot, 3000); engDot();
+route();
+</script>
+</body>
+</html>

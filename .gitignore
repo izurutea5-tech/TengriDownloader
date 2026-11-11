@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+data/
+downloads/
+engine/
+.venv/
+venv/
+dist/
+build/
+dist_release/
+RELEASE_NOTES.txt
+*.spec

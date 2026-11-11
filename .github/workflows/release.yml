@@ -1,0 +1,141 @@
+# Шинэ хувилбар гаргах: app.py доторх VERSION-ийг өөрчлөөд commit хийж, `git tag v3.2 && git push --tags`
+# (эсвэл GitHub → Actions → Release → Run workflow). GitHub өөрөө бүтээж Release болгон гаргана:
+#   • TengriDownloader.exe              — Windows (дан файл, Python шаардлагагүй)
+#   • TengriDownloader-macos.zip        — macOS (Apple Silicon) .app
+#   • TengriDownloader-linux.tar.gz     — Linux (x86_64) дан програм
+#   • TengriDownloader-<хувилбар>.zip   — эх код (Python-оор ажиллуулах)
+# Хэрэглэгчдийн програм эндээс автоматаар шинэчлэгдэнэ.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            kind: exe
+          - os: macos-latest
+            kind: macos
+          - os: ubuntu-22.04
+            kind: linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Сангууд
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt segno pyinstaller
+
+      - name: Windows .exe
+        if: matrix.kind == 'exe'
+        run: >
+          pyinstaller --noconfirm --onefile --windowed --name TengriDownloader --icon icon.ico
+          --add-data "web;web" --collect-all curl_cffi --collect-all webview
+          --collect-all clr_loader --collect-all pythonnet --collect-submodules core
+          app.py
+
+      - name: macOS .app
+        if: matrix.kind == 'macos'
+        run: |
+          pyinstaller --noconfirm --onedir --windowed --name "Tengri Downloader" --icon icon.icns \
+            --osx-bundle-identifier site.tengritoon.downloader \
+            --add-data "web:web" --collect-all curl_cffi --collect-all webview --collect-submodules core app.py
+          ditto -c -k --sequesterRsrc --keepParent "dist/Tengri Downloader.app" dist/TengriDownloader-macos.zip
+
+      - name: Linux
+        if: matrix.kind == 'linux'
+        run: |
+          pyinstaller --noconfirm --onefile --name TengriDownloader \
+            --add-data "web:web" --collect-all curl_cffi --collect-submodules core app.py
+          mkdir -p pkg/TengriDownloader
+          cp dist/TengriDownloader pkg/TengriDownloader/
+          cp web/icon.png pkg/TengriDownloader/tengri-downloader.png
+          cat > pkg/TengriDownloader/install.sh <<'SH'
+          #!/bin/sh
+          # Програмын цэсэнд нэмнэ: ./install.sh
+          set -e
+          D="$HOME/.local/share/tengri-downloader-app"; mkdir -p "$D" "$HOME/.local/share/applications"
+          cp TengriDownloader tengri-downloader.png "$D/"; chmod +x "$D/TengriDownloader"
+          printf '[Desktop Entry]\nType=Application\nName=Tengri Downloader\nExec="%s/TengriDownloader"\nIcon=%s/tengri-downloader.png\nCategories=Network;Graphics;\nStartupWMClass=TengriDownloader\n' "$D" "$D" > "$HOME/.local/share/applications/tengri-downloader.desktop"
+          echo "Болсон: програмын цэснээс Tengri Downloader-ийг ол."
+          SH
+          chmod +x pkg/TengriDownloader/install.sh pkg/TengriDownloader/TengriDownloader
+          tar -czf dist/TengriDownloader-linux.tar.gz -C pkg TengriDownloader
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bin-${{ matrix.kind }}
+          path: |
+            dist/TengriDownloader.exe
+            dist/TengriDownloader-macos.zip
+            dist/TengriDownloader-linux.tar.gz
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: bins
+          merge-multiple: true
+
+      - name: Хувилбар
+        id: ver
+        run: |
+          V=$(python3 -c "import re;print(re.search(r'VERSION\s*=\s*\"([^\"]+)\"',open('app.py',encoding='utf-8').read()).group(1))")
+          if [[ "$GITHUB_REF" == refs/tags/v* && "${GITHUB_REF#refs/tags/v}" != "$V" ]]; then
+            echo "::error::Tag ${GITHUB_REF#refs/tags/} нь app.py доторх VERSION=$V-тэй таарахгүй байна"; exit 1
+          fi
+          echo "v=$V" >> "$GITHUB_OUTPUT"
+
+      - name: Эх кодын zip + тайлбар
+        run: |
+          V=${{ steps.ver.outputs.v }}
+          python3 tools/make-release.py "$V"
+          ls -la bins
+          {
+            echo "## Tengri Downloader $V"
+            echo
+            echo "| Систем | Файл | Яаж ажиллуулах |"
+            echo "|---|---|---|"
+            echo "| Windows | \`TengriDownloader.exe\` | Татаад давхар дар |"
+            echo "| macOS (M1/M2/M3…) | \`TengriDownloader-macos.zip\` | Задлаад Applications руу зөө. Анх удаа: баруун товч → Open |"
+            echo "| Linux | \`TengriDownloader-linux.tar.gz\` | Задлаад \`./TengriDownloader\` (цэсэнд нэмэх бол \`./install.sh\`) |"
+            echo "| Бусад / Intel Mac | \`TengriDownloader-$V.zip\` | Эх код — README-г үз |"
+            echo
+            cat dist_release/github-notes.md
+            for k in exe macos linux; do
+              case $k in exe) f=bins/TengriDownloader.exe;; macos) f=bins/TengriDownloader-macos.zip;; linux) f=bins/TengriDownloader-linux.tar.gz;; esac
+              [ -f "$f" ] && echo "sha256-$k: $(sha256sum "$f" | cut -d' ' -f1)"
+            done
+          } > notes.md
+          cat notes.md
+
+      - name: Release гаргах
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V=${{ steps.ver.outputs.v }}
+          FILES="bins/TengriDownloader.exe bins/TengriDownloader-macos.zip bins/TengriDownloader-linux.tar.gz dist_release/TengriDownloader-$V.zip"
+          if gh release view "v$V" >/dev/null 2>&1; then
+            gh release upload "v$V" $FILES --clobber
+            gh release edit "v$V" --notes-file notes.md
+          else
+            gh release create "v$V" $FILES --title "Tengri Downloader $V" --notes-file notes.md --target "$GITHUB_SHA"
+          fi
