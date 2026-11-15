@@ -51,18 +51,24 @@ jobs:
       - name: Windows .exe шалгах (цонх нээгдэж, хуудас ачаалагдах эсэх)
         if: matrix.kind == 'exe'
         continue-on-error: true
+        timeout-minutes: 6
         shell: pwsh
         run: |
-          $p = Start-Process -FilePath dist\TengriDownloader.exe -PassThru
           $log = Join-Path $env:LOCALAPPDATA "Tengri Downloader\data\logs\tengri.log"
+          Start-Process -FilePath dist\TengriDownloader.exe -RedirectStandardOutput out.txt -RedirectStandardError err.txt
           $ok = $false
-          for ($i = 0; $i -lt 90; $i++) {
-            Start-Sleep -Seconds 1
-            if ((Test-Path $log) -and (Select-String -Path $log -Pattern "UI booted" -Quiet)) { $ok = $true; break }
+          for ($i = 0; $i -lt 60; $i++) {
+            Start-Sleep -Seconds 2
+            $has = Test-Path $log
+            $boot = $has -and (Select-String -Path $log -Pattern "UI booted" -Quiet)
+            Write-Host "t=$($i*2)s log=$has booted=$boot"
+            if ($boot) { $ok = $true; break }
           }
-          try { Invoke-RestMethod http://127.0.0.1:4568/api/whoami | ConvertTo-Json } catch { "whoami failed: $_" }
-          Get-Process TengriDownloader -ErrorAction SilentlyContinue | Stop-Process -Force
-          if (Test-Path $log) { Get-Content $log -Tail 200 } else { "NO LOG FILE" }
+          try { Invoke-WebRequest http://127.0.0.1:4568/api/whoami -TimeoutSec 10 -UseBasicParsing | Select-Object -ExpandProperty Content } catch { Write-Host "whoami failed: $_" }
+          try { (Invoke-WebRequest http://127.0.0.1:4568/ -TimeoutSec 10 -UseBasicParsing).Content.Length } catch { Write-Host "index failed: $_" }
+          Write-Host "----- LOG -----"
+          if (Test-Path $log) { Get-Content $log -Tail 150 } else { Write-Host "NO LOG FILE" }
+          Get-Process TengriDownloader, java -ErrorAction SilentlyContinue | Stop-Process -Force
           if (-not $ok) { Write-Error "Цонхонд UI ачаалагдсангүй"; exit 1 }
 
       - name: macOS .app
