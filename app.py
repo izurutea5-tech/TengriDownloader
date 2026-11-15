@@ -23,6 +23,31 @@ for _k in ("NO_PROXY", "no_proxy"):
         os.environ[_k] = ",".join(x for x in (_v, "127.0.0.1,localhost,::1") if x)
 
 from core import engine, http, lan, osutil, store, updater
+
+
+def _setup_log():
+    """.exe/.app (консолгүй) үед бүх гаралтыг data/logs/tengri.log руу бичнэ — алдааг олоход хэрэгтэй."""
+    import logging
+    d = os.path.join(store.DATA, "logs")
+    os.makedirs(d, exist_ok=True)
+    path = os.path.join(d, "tengri.log")
+    try:
+        if os.path.getsize(path) > 1_000_000:
+            os.replace(path, path + ".1")
+    except OSError:
+        pass
+    if getattr(sys, "frozen", False) or sys.stdout is None or sys.stderr is None:
+        f = open(path, "a", encoding="utf-8", buffering=1, errors="replace")
+        sys.stdout = sys.stderr = f
+        logging.basicConfig(stream=f, level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
+        logging.getLogger("pywebview").setLevel(logging.DEBUG)
+    print(f"\n===== {time.strftime('%Y-%m-%d %H:%M:%S')} start {sys.argv} frozen={getattr(sys, 'frozen', False)} "
+          f"platform={sys.platform} python={sys.version.split()[0]}", flush=True)
+    return path
+
+
+LOG_PATH = _setup_log()
+UI_BOOTED = threading.Event()
 from core import sources as S
 import json
 import shutil
@@ -312,6 +337,23 @@ def stores_del():
 @app.get("/api/ui")
 def ui_get():
     return jsonify(store.load("ui"))
+
+
+@app.post("/api/ui/booted")
+def ui_booted():
+    if not UI_BOOTED.is_set():
+        print("UI booted:", request.headers.get("User-Agent", "")[:160], flush=True)
+    UI_BOOTED.set()
+    return jsonify({"ok": True})
+
+
+@app.get("/api/log")
+def get_log():
+    try:
+        with open(LOG_PATH, encoding="utf-8", errors="replace") as f:
+            return Response(f.read()[-200_000:], mimetype="text/plain; charset=utf-8")
+    except OSError:
+        return Response("", mimetype="text/plain")
 
 
 @app.post("/api/ui/<what>")
@@ -1202,7 +1244,7 @@ def _open_ui(url):
     webbrowser.open(url)
 
 
-VERSION = "3.2"
+VERSION = "3.3"
 
 
 def _auto_update(force=False):
@@ -1311,7 +1353,29 @@ def main():
                 win.events.shown += lambda: _set_window_icon(win)
             except Exception:
                 pass
-            for _ in range(50):  # Flask асахыг хүлээх
+            fell_back = threading.Event()
+
+            def watchdog():
+                """Цонхонд хуудас ачаалагдахгүй (хоосон цонх) бол дахин ачаалж, болохгүй бол хөтөч дээр нээнэ."""
+                if UI_BOOTED.wait(10):
+                    return
+                print("Watchdog: UI not booted after 10s, reloading window", flush=True)
+                try:
+                    win.load_url(url)
+                except Exception as e:
+                    print("Watchdog: load_url failed:", e, flush=True)
+                if UI_BOOTED.wait(15):
+                    return
+                print("Watchdog: window still blank -> opening in browser", flush=True)
+                fell_back.set()
+                app.config["pick_path"] = None
+                _open_ui(url)
+                try:
+                    win.destroy()
+                except Exception as e:
+                    print("Watchdog: destroy failed:", e, flush=True)
+            threading.Thread(target=watchdog, daemon=True).start()
+            for _ in range(150):  # Flask асахыг хүлээх (15 сек)
                 try:
                     http.get(url + "/api/whoami", retries=1, timeout=1)
                     break
@@ -1319,6 +1383,8 @@ def main():
                     time.sleep(0.1)
             try:
                 kw = {"private_mode": False, "storage_path": os.path.join(store.DATA, "webview")}
+                if osutil.WIN:
+                    kw["gui"] = "edgechromium"  # хуучин IE (mshtml) руу чимээгүй унахаас сэргийлнэ
                 if osutil.LINUX and os.path.isfile(icon):
                     kw["icon"] = icon
                 try:
@@ -1327,9 +1393,11 @@ def main():
                     kw.pop("icon", None)
                     webview.start(**kw)
             except Exception as e:  # WebView2 / GTK / Qt байхгүй — хөтөч дээр үргэлжлүүлнэ
-                print("Цонх нээгдсэнгүй, хөтөч дээр нээж байна:", e)
+                print("Цонх нээгдсэнгүй, хөтөч дээр нээж байна:", repr(e), flush=True)
                 app.config["pick_path"] = None
                 _open_ui(url)
+                fell_back.set()
+            if fell_back.is_set():  # цонхгүйгээр сервер ажилласаар байна (хөтөч дээр)
                 try:
                     while True:
                         time.sleep(3600)

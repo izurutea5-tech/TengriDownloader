@@ -287,6 +287,7 @@ body.reading #view{padding:0;background:var(--rbg,#000)}
 <div id="toast"></div>
 <div id="updbar" class="updbar" hidden></div>
 <script>
+try { fetch('/api/ui/booted', {method: 'POST'}); } catch (e) {}
 const $ = s => document.querySelector(s);
 const V = $('#view');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1064,6 +1065,7 @@ R.settings = async () => {
     <div class="setting"><div><div>Шинэчлэлтийг автоматаар шалгах</div><div class="muted">Асах үед болон 6 цаг тутамд</div></div><input type="checkbox" id="s_autoupd" style="accent-color:var(--pink);width:22px;height:22px"></div>
     <div class="setting"><div><div>Шинэчлэлтийг автоматаар татаж суулгах</div><div class="muted">Шинэ хувилбарыг цаана нь татаж, дараагийн асалтад өөрөө суулгана</div></div><input type="checkbox" id="s_autoinst" style="accent-color:var(--pink);width:22px;height:22px"></div>
     <div class="setting"><div><div>Шинэчлэлтийн эх сурвалж</div><div class="muted">Хоосон = анхдагч (GitHub: izurutea5-tech/TengriDownloader). Эсвэл өөр latest.json холбоос</div></div><input type="text" id="s_feed" style="width:360px" placeholder="github:izurutea5-tech/TengriDownloader"></div>
+    <div class="setting"><div><div>Алдааны лог</div><div class="muted">Асуудал гарвал энэ логийг илгээгээрэй</div></div><a class="btn" href="/api/log" target="_blank" onclick="IZopen('/api/log'); return false;">Лог харах</a></div>
     <div class="section">Харагдац</div>
     <div class="setting"><div><div>Өнгөний сэдэв</div><div class="muted">Товч, тодотголын өнгө</div></div><div class="sw" id="s_acc">${Object.entries(ACCENTS).map(([k, c]) => `<a data-k="${k}" title="${k}" style="background:${c[0]}"></a>`).join('')}</div></div>
     <div class="section">Өгөгдөл</div>
