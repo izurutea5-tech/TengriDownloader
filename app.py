@@ -1201,13 +1201,9 @@ def _set_window_icon(win):
         ico = os.path.join(web, "icon.ico")
         if not os.path.isfile(ico):
             return
-        try:  # pywebview (WinForms) — Form.Icon
-            import clr  # noqa: F401  (pythonnet)
-            from System.Drawing import Icon  # type: ignore
-            win.native.Icon = Icon(ico)
-            return
-        except Exception:
-            pass
+        # АНХААР: win.native (WinForms)-д өөр урсгалаас хүрч болохгүй — pythonnet GIL-ийг барьсаар UI урсгалыг
+        # хүлээж, бүх програм царцдаг (хоосон цонх). Зөвхөн WinAPI ашиглана (ctypes нь GIL-ийг сулладаг).
+        time.sleep(0.5)
         try:  # WinAPI: цонхыг гарчгаар нь олж WM_SETICON илгээнэ
             import ctypes
             from ctypes import wintypes
@@ -1216,15 +1212,15 @@ def _set_window_icon(win):
             u.FindWindowW.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR]
             u.LoadImageW.restype = wintypes.HANDLE
             u.LoadImageW.argtypes = [wintypes.HINSTANCE, wintypes.LPCWSTR, wintypes.UINT, ctypes.c_int, ctypes.c_int, wintypes.UINT]
-            u.SendMessageW.restype = ctypes.c_ssize_t
-            u.SendMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+            u.PostMessageW.restype = wintypes.BOOL
+            u.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
             hwnd = u.FindWindowW(None, APP_NAME)
             if not hwnd:
                 return
             for which, size in ((1, 256), (0, 32)):  # ICON_BIG, ICON_SMALL
                 h = u.LoadImageW(None, ico, 1, size, size, 0x10)  # IMAGE_ICON, LR_LOADFROMFILE
                 if h:
-                    u.SendMessageW(hwnd, 0x0080, which, h)  # WM_SETICON
+                    u.PostMessageW(hwnd, 0x0080, which, h)  # WM_SETICON (хүлээхгүй)
         except Exception:
             pass
     elif osutil.MAC:
@@ -1244,7 +1240,7 @@ def _open_ui(url):
     webbrowser.open(url)
 
 
-VERSION = "3.3"
+VERSION = "3.4"
 
 
 def _auto_update(force=False):
@@ -1350,7 +1346,7 @@ def main():
                 return (r[0] if isinstance(r, (list, tuple)) else r) if r else ""
             app.config["pick_path"] = pick_path
             try:
-                win.events.shown += lambda: _set_window_icon(win)
+                win.events.shown += lambda: threading.Thread(target=_set_window_icon, args=(win,), daemon=True).start()
             except Exception:
                 pass
             fell_back = threading.Event()
