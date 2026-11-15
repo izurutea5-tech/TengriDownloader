@@ -50,7 +50,6 @@ jobs:
 
       - name: Windows .exe шалгах (цонх нээгдэж, хуудас ачаалагдах эсэх)
         if: matrix.kind == 'exe'
-        continue-on-error: true
         timeout-minutes: 6
         shell: pwsh
         run: |
