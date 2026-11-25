@@ -7,8 +7,9 @@ from .madara import Madara
 from .mangadex import MangaDex
 from .mangathemesia import MangaThemesia
 from .nokara import Nokara
+from .comix import Comix
 
-TYPES = {c.type: c for c in (MangaDex, Madara, MangaThemesia, Nokara, Generic)}
+TYPES = {c.type: c for c in (MangaDex, Madara, MangaThemesia, Nokara, Comix, Generic)}
 
 
 def build(cfg):
@@ -26,6 +27,8 @@ def detect(url):
     p = urlparse(url)
     base = f"{p.scheme}://{p.netloc}"
     name = p.netloc.replace("www.", "").split(".")[0].replace("-", " ").title()
+    if p.netloc.replace("www.", "") == "comix.mn":
+        return {"type": "comix", "base_url": base, "name": "Comix", "manga_path": "projects", "lang": "mn"}
     if "mangadex.org" in p.netloc:
         return {"type": "mangadex", "base_url": base, "name": "MangaDex", "manga_path": ""}
     html = http.get(url).text

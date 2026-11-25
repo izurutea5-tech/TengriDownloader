@@ -54,6 +54,8 @@ DEFAULTS = {
         {"id": "mangadex-en", "name": "MangaDex (EN)", "type": "mangadex", "base_url": "https://mangadex.org", "lang": "en"},
         {"id": "sushiscan", "name": "SushiScan", "type": "mangathemesia", "base_url": "https://sushiscan.net",
          "lang": "fr", "manga_path": "catalogue"},
+        {"id": "comix", "name": "Comix", "type": "comix", "base_url": "https://comix.mn", "lang": "mn",
+         "manga_path": "projects"},
     ],
     "library": {},
     "ui": {"pinned": [], "last_used": []},
@@ -87,7 +89,7 @@ def save(name, data):
         os.replace(tmp, _path(name))
 
 
-PRESET_IDS = ("sushiscan",)
+PRESET_IDS = ("sushiscan", "comix")
 
 
 def ensure_presets():

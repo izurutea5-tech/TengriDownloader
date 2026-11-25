@@ -1240,7 +1240,7 @@ def _open_ui(url):
     webbrowser.open(url)
 
 
-VERSION = "3.4"
+VERSION = "3.5"
 
 
 def _auto_update(force=False):

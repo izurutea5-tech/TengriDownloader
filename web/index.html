@@ -655,7 +655,7 @@ const tile = (m, sid) => `<a class="tile" href="#/manga?source=${encodeURICompon
 function siteForm(s = {}) {
   return `<label>Нэр</label><input type="text" id="f_name" value="${esc(s.name||'')}">
     <label>Үндсэн хаяг (base URL)</label><input type="text" id="f_base" value="${esc(s.base_url||'')}" placeholder="https://example.com">
-    <label>Загвар</label><select id="f_type">${['madara','mangathemesia','nokara','mangadex','generic'].map(t => `<option ${s.type===t?'selected':''}>${t}</option>`).join('')}</select>
+    <label>Загвар</label><select id="f_type">${['madara','mangathemesia','nokara','comix','mangadex','generic'].map(t => `<option ${s.type===t?'selected':''}>${t}</option>`).join('')}</select>
     <label>Манга замын нэр (ихэвчлэн manga эсвэл series)</label><input type="text" id="f_path" value="${esc(s.manga_path||'manga')}">
     <label>Хэл (MangaDex-д: en, ja, ko, mn …)</label><input type="text" id="f_lang" value="${esc(s.lang||'en')}">`;
 }
