@@ -86,6 +86,59 @@ def err(msg, code=400):
     return jsonify({"error": str(msg)}), code
 
 
+_cf_lock = threading.Lock()
+
+
+@app.post("/api/cf/verify")
+def cf_verify():
+    """Cloudflare-тай сайтыг програмын жижиг цонхонд нээнэ. Хэрэглэгч шалгалтыг өөрөө давсны дараа тэр cookie-г
+    програмын хүсэлтүүдэд ашиглана (Tachiyomi/Mihon-ий WebView-ийн аргатай адил)."""
+    url = (request.json or {}).get("url", "").strip()
+    if not url.startswith("http"):
+        return err("URL буруу")
+    wv = app.config.get("webview")
+    if not wv:
+        return err("Энэ горимд (хөтөч) цонх нээх боломжгүй. Програмыг цонхтойгоор нь ажиллуулна уу.")
+    if not _cf_lock.acquire(blocking=False):
+        return err("Баталгаажуулах цонх аль хэдийн нээлттэй байна")
+    try:
+        from urllib.parse import urlparse
+        base = "{0.scheme}://{0.netloc}/".format(urlparse(url))
+        w = wv.create_window("Сайтыг баталгаажуулах — шалгалтыг давсны дараа цонх өөрөө хаагдана", base,
+                             width=900, height=720)
+        closed = threading.Event()
+        w.events.closed += lambda: closed.set()
+        deadline = time.time() + 300
+        while time.time() < deadline and not closed.is_set():
+            time.sleep(1.5)
+            try:
+                title = w.evaluate_js("document.title") or ""
+                ready = w.evaluate_js("document.readyState") == "complete"
+                cookies = {}
+                for c in w.get_cookies() or []:
+                    for name, m in c.items():
+                        cookies[name] = m.value
+            except Exception as e:
+                print("cf verify poll:", e, flush=True)
+                continue
+            if ready and "cf_clearance" in cookies and "just a moment" not in title.lower():
+                ua = w.evaluate_js("navigator.userAgent") or ""
+                http.set_site_auth(base, cookies, ua)
+                print("cf verify ok:", base, list(cookies), flush=True)
+                try:
+                    w.destroy()
+                except Exception:
+                    pass
+                return jsonify({"ok": True})
+        try:
+            w.destroy()
+        except Exception:
+            pass
+        return err("Баталгаажуулалт дууссангүй (цонх хаагдсан эсвэл хугацаа дууссан)")
+    finally:
+        _cf_lock.release()
+
+
 def need_source(sid):
     if sid.startswith(SW.PREFIX):
         try:
@@ -1240,7 +1293,7 @@ def _open_ui(url):
     webbrowser.open(url)
 
 
-VERSION = "3.5"
+VERSION = "3.6"
 
 
 def _auto_update(force=False):
@@ -1332,6 +1385,7 @@ def main():
         if webview:
             threading.Thread(target=serve, daemon=True).start()
             icon = os.path.join(store.ASSETS, "web", "icon.png")
+            app.config["webview"] = webview
             win = webview.create_window(APP_NAME, url, width=1400, height=880, min_size=(900, 600),
                                         background_color="#06141a", text_select=True)
 

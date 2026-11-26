@@ -295,9 +295,26 @@ const api = async (path, opt = {}) => {
   if (opt.body && typeof opt.body !== 'string') { opt.body = JSON.stringify(opt.body); opt.headers = {'Content-Type': 'application/json'}; }
   const r = await fetch('/api' + path, opt);
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error || r.statusText);
+  if (!r.ok) { const m = j.error || r.statusText; if (/Cloudflare хамгаалалт/.test(m)) cfPrompt(m); throw new Error(m); }
   return j;
 };
+let cfBusy = false;
+function cfPrompt(msg) {
+  const u = (msg.match(/https?:\/\/[^\s—]+/) || [])[0];
+  if (!u || cfBusy || $('#cfbar')) return;
+  const host = new URL(u).host;
+  const d = document.createElement('div'); d.id = 'cfbar';
+  d.style.cssText = 'position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9999;background:var(--panel);border:1px solid var(--pink);border-radius:14px;padding:12px 16px;display:flex;gap:12px;align-items:center;box-shadow:0 10px 40px #0009;max-width:92vw';
+  d.innerHTML = `<div><b>${esc(host)}</b> Cloudflare шалгалттай байна.<div class="muted" style="font-size:12px">Нэг удаа сайтыг нээж «би робот биш» шалгалтыг өөрөө даваад буцаад ирнэ.</div></div><button class="btn fill" id="cfgo">Баталгаажуулах</button><button class="btn" id="cfx">✕</button>`;
+  document.body.appendChild(d);
+  $('#cfx').onclick = () => d.remove();
+  $('#cfgo').onclick = async () => {
+    cfBusy = true; $('#cfgo').disabled = true; $('#cfgo').textContent = 'Цонхонд шалгалтаа давна уу…';
+    try { await api('/cf/verify', {method: 'POST', body: {url: u}}); d.remove(); toast('Баталгаажлаа ✓'); route(); }
+    catch (e) { toast(e.message, 5000); $('#cfgo').disabled = false; $('#cfgo').textContent = 'Дахин оролдох'; }
+    finally { cfBusy = false; }
+  };
+}
 const img = (url, sid) => url ? `/api/img?source=${encodeURIComponent(sid||'')}&url=${encodeURIComponent(url)}` : 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>';
 const toast = (m, ms = 2600) => { const t = $('#toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(t._t); t._t = setTimeout(() => t.style.display = 'none', ms); };
 const spin = () => V.innerHTML = '<div class="spin"></div>';

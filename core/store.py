@@ -56,6 +56,8 @@ DEFAULTS = {
          "lang": "fr", "manga_path": "catalogue"},
         {"id": "comix", "name": "Comix", "type": "comix", "base_url": "https://comix.mn", "lang": "mn",
          "manga_path": "projects"},
+        {"id": "manhuaus", "name": "ManhuaUS", "type": "madara", "base_url": "https://manhuaus.com", "lang": "en",
+         "manga_path": "manga"},
     ],
     "library": {},
     "ui": {"pinned": [], "last_used": []},
@@ -89,7 +91,7 @@ def save(name, data):
         os.replace(tmp, _path(name))
 
 
-PRESET_IDS = ("sushiscan", "comix")
+PRESET_IDS = ("sushiscan", "comix", "manhuaus")
 
 
 def ensure_presets():
